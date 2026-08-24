@@ -3,6 +3,7 @@ type IconName =
   | "bell"
   | "user"
   | "play"
+  | "pause"
   | "heart"
   | "mic"
   | "video"
@@ -33,6 +34,7 @@ const paths: Record<IconName, React.ReactNode> = {
   bell: <><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M13.7 21a2 2 0 01-3.4 0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></>,
   user: <><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></>,
   play: <polygon points="6,4 20,12 6,20" fill="currentColor" />,
+  pause: ( <>  <rect x="6" y="4" width="4" height="16" fill="currentColor" />  <rect x="14" y="4" width="4" height="16" fill="currentColor" /> </>),
   heart: <path d="M12 21s-7.5-4.6-10-9.3C.6 8.4 2.4 5 6 5c2.2 0 3.7 1.2 6 3.4C14.3 6.2 15.8 5 18 5c3.6 0 5.4 3.4 4 6.7C19.5 16.4 12 21 12 21z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />,
   mic: <><rect x="9" y="2" width="6" height="12" rx="3" fill="currentColor" /><path d="M5 11a7 7 0 0014 0M12 18v4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></>,
   video: <><rect x="2" y="6" width="14" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /><polygon points="22,7 16,12 22,17" fill="currentColor" /></>,
