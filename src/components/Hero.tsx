@@ -176,7 +176,7 @@ export default function Hero() {
               onClick={handleListenLive}
               className="btn-pill bg-orange-500 hover:bg-orange-600 px-6 py-3 font-semibold flex items-center gap-2"
             >
-              <Icon name={audio ? "pause" : "play"} />
+              <Icon name="play" />
               {audio ? "Stop Listening" : "Listen Live Now"}
             </button>
             <button className="btn-pill bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-3 font-semibold flex items-center gap-2">
@@ -223,7 +223,7 @@ export default function Hero() {
                 onClick={handleListenLive}
                 className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center shrink-0"
               >
-                <Icon name={audio ? "pause" : "play"} />
+                <Icon name="play" />
               </button>
               <Icon name="vol" className="w-4 h-4 text-white/60" />
               <div className="flex-1 h-1.5 rounded-full bg-white/15 overflow-hidden">
