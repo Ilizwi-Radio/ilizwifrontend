@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Show, MusicTrack, SoundEffect } from '@/lib/types';
 import { audioEngine } from '@/lib/audioEngine';
 import { getShows, getMusicTracks, SOUND_EFFECTS, addMusicTrack } from '@/lib/api';
-import { startBroadcast, stopBroadcast, getBroadcastStatus, updateListenerCount, playBroadcastContent,clearBroadcastContent} from '@/lib/api';
+import { startBroadcast, stopBroadcast, getBroadcastStatus, updateListenerCount, playBroadcastContent,clearBroadcastContent, getIcecastStatus,} from '@/lib/api';
 import VoiceVisualizer from './VoiceVisualizer';
 import {
   Mic,
@@ -31,6 +31,8 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const STREAM_URL = `${process.env.NEXT_PUBLIC_STREAM_URL}/live`;
+console.log("STREAM_URL =", STREAM_URL);
 interface PresenterStudioProps {
   presenterId: string;
   presenterName: string;
@@ -96,6 +98,8 @@ export default function PresenterStudio({
         setTracks(allTracks);
       });
     }, []);
+
+  const [icecastStatus, setIcecastStatus] =  useState({ online: false,  listeners: 0,  bitrate: 0, listenerPeak: 0,});
   // Subscribe to real-time voice meter
   useEffect(() => {
     const unsubscribe = audioEngine.subscribeIntensity((intensity, peak) => {
@@ -113,14 +117,34 @@ export default function PresenterStudio({
       timer = window.setInterval(() => {
         setBroadcastSeconds((sec) => sec + 1);
         // Subtle organic listener fluctuations
-        if (Math.random() > 0.4) {
-          const delta = Math.floor(Math.random() * 11) - 4;
-          setLiveListeners((curr) => Math.max(100, curr + delta));
-        }
-      }, 1000);
+        }, 1000);
     }
     return () => clearInterval(timer);
   }, [isBroadcasting]);
+
+  useEffect(() => {
+  const loadIcecastStatus = async () => {
+    try {
+      const status =
+        await getIcecastStatus();
+
+      setIcecastStatus(status);
+      setLiveListeners(
+        status.listeners || 0
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  loadIcecastStatus();
+
+  const interval =
+    setInterval(loadIcecastStatus, 10000);
+
+  return () =>
+    clearInterval(interval);
+}, []);
 
   useEffect(() => {
   if (!broadcastId || !isBroadcasting) {
@@ -128,11 +152,7 @@ export default function PresenterStudio({
   }
 
   const interval = setInterval(() => {
-    updateListenerCount(
-      broadcastId,
-      listenerRef.current
-    ).catch(console.error);
-  }, 10000);
+    }, 10000);
 
   return () => clearInterval(interval);
 
@@ -166,10 +186,12 @@ export default function PresenterStudio({
       }
     try {
       const res = await audioEngine.startMicrophone();
-
+      console.log("STARTING BROADCAST");
+      console.log("Selected Show:", selectedShowId);
+      console.log("Stream URL:", STREAM_URL);
       const broadcast = await startBroadcast(
         selectedShowId,
-        "studio"
+        STREAM_URL
       );
       console.log("Selected Show ID:", selectedShowId);
       console.log("Shows:", shows);
@@ -408,7 +430,7 @@ export default function PresenterStudio({
             <Users className="w-4 h-4 text-sky-400" />
             <span className="text-xs text-stone-400">LISTENERS:</span>
             <span className="font-bold text-white tracking-wider">
-              {isBroadcasting ? liveListeners.toLocaleString() : '0'}
+              {isBroadcasting ? icecastStatus.listeners : 0}
             </span>
           </div>
 

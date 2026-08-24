@@ -705,7 +705,7 @@ export async function updateListenerCount(
     }
   );
 
-  return response.json}
+  return response.json()}
 
 export async function playBroadcastContent(
   broadcastId: string,
@@ -832,4 +832,13 @@ export async function deleteMusicTrack(id: string) {
   );
 
   return response.ok;
+}
+
+//==== Getting Number of Listeners ====///
+export async function getIcecastStatus() {
+  const response = await fetch(
+    `${API_URL}/api/icecast/status`
+  );
+
+  return response.json();
 }
