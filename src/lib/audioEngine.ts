@@ -1,7 +1,8 @@
 /**
  * Web Audio Engine for Presenter Studio
  * Handles real-time microphone stream, spectrum analysis, synthesized backing tracks,
- * uploaded audio playback, soundboard effects, and intelligent mic-over-music auto ducking.
+ * uploaded audio playback, soundboard effects, intelligent mic-over-music auto ducking,
+ * and live streaming of the full mix to Icecast via a WebSocket relay.
  */
 
 import { SoundEffect } from './types';
@@ -24,8 +25,18 @@ class AudioEngine {
   // Sound FX channel
   private sfxGain: GainNode | null = null;
 
-  // Master out
+  // Master out (local monitor / speakers — deliberately excludes raw mic to avoid feedback)
   private masterGain: GainNode | null = null;
+
+  // Broadcast bus (mic + music + sfx) — this is what actually gets streamed to Icecast
+  private broadcastGain: GainNode | null = null;
+  private streamDestination: MediaStreamAudioDestinationNode | null = null;
+
+  // Streaming pipeline
+  private mediaRecorder: MediaRecorder | null = null;
+  private socket: WebSocket | null = null;
+  public isStreaming: boolean = false;
+  private streamingListeners: ((status: 'connecting' | 'live' | 'error' | 'stopped') => void)[] = [];
 
   // State
   public isMicActive: boolean = false;
@@ -52,10 +63,16 @@ class AudioEngine {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.ctx = new AudioCtx();
 
-      // Master output
+      // Master output (local monitor / speakers)
       this.masterGain = this.ctx.createGain();
       this.masterGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
       this.masterGain.connect(this.ctx.destination);
+
+      // Broadcast bus — separate from the speaker monitor so the presenter's own
+      // mic never loops back through their speakers, but everything still reaches
+      // the actual stream.
+      this.broadcastGain = this.ctx.createGain();
+      this.broadcastGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
 
       // Mic Analyser & Gain
       this.analyser = this.ctx.createAnalyser();
@@ -65,8 +82,9 @@ class AudioEngine {
       this.micGain = this.ctx.createGain();
       this.micGain.gain.setValueAtTime(this.micVolume, this.ctx.currentTime);
       this.micGain.connect(this.analyser);
-      // Note: we don't connect mic to destination by default to prevent speaker feedback loop,
-      // unless broadcast monitor is explicitly wired.
+      // Mic feeds the broadcast bus (goes out on-air) but NOT masterGain/destination,
+      // so the presenter doesn't hear their own voice looped back through speakers.
+      this.micGain.connect(this.broadcastGain);
 
       // Music Channel with Ducking
       this.musicGain = this.ctx.createGain();
@@ -77,11 +95,17 @@ class AudioEngine {
 
       this.musicGain.connect(this.duckingGain);
       this.duckingGain.connect(this.masterGain);
+      this.duckingGain.connect(this.broadcastGain);
 
       // SFX Channel
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
       this.sfxGain.connect(this.masterGain);
+      this.sfxGain.connect(this.broadcastGain);
+
+      // Streaming tap — captures the full broadcast mix as a MediaStream
+      this.streamDestination = this.ctx.createMediaStreamDestination();
+      this.broadcastGain.connect(this.streamDestination);
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
@@ -179,6 +203,19 @@ class AudioEngine {
     };
   }
 
+  public subscribeStreamingStatus(cb: (status: 'connecting' | 'live' | 'error' | 'stopped') => void) {
+    this.streamingListeners.push(cb);
+    return () => {
+      this.streamingListeners = this.streamingListeners.filter((l) => l !== cb);
+    };
+  }
+
+  private emitStreamingStatus(status: 'connecting' | 'live' | 'error' | 'stopped') {
+    for (const listener of this.streamingListeners) {
+      listener(status);
+    }
+  }
+
   public getFrequencyData(array: Uint8Array): void {
     
     if (this.analyser && !this.isSimulated && this.isMicActive && !this.isMuted) {
@@ -272,6 +309,108 @@ class AudioEngine {
   }
 
   // -------------------------------------------------------------
+  // LIVE STREAMING TO ICECAST (via WebSocket relay + ffmpeg)
+  // -------------------------------------------------------------
+
+  /**
+   * Starts capturing the full broadcast mix (mic + music + sfx) and streaming
+   * it to a relay server over a WebSocket. The relay is expected to pipe the
+   * incoming WebM/Opus chunks into ffmpeg, which pushes them into Icecast.
+   *
+   * @param relayWsUrl e.g. "wss://your-relay-domain/broadcast"
+   */
+  public startStreaming(relayWsUrl: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.isStreaming) {
+        resolve();
+        return;
+      }
+      if (!this.streamDestination) {
+        this.getContext(); // ensures streamDestination exists
+      }
+      if (!this.streamDestination) {
+        reject(new Error('Audio engine not initialized'));
+        return;
+      }
+
+      this.emitStreamingStatus('connecting');
+
+      const socket = new WebSocket(relayWsUrl);
+      this.socket = socket;
+
+      socket.onopen = () => {
+        try {
+          const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? 'audio/webm;codecs=opus'
+            : 'audio/webm';
+
+          const recorder = new MediaRecorder(this.streamDestination!.stream, {
+            mimeType,
+            audioBitsPerSecond: 128000,
+          });
+
+          recorder.ondataavailable = (event: BlobEvent) => {
+            if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+              socket.send(event.data);
+            }
+          };
+
+          recorder.onerror = (event) => {
+            console.error('MediaRecorder error:', event);
+            this.emitStreamingStatus('error');
+          };
+
+          // Emit a chunk every 250ms — small enough for low latency,
+          // large enough not to overwhelm the socket.
+          recorder.start(250);
+          this.mediaRecorder = recorder;
+          this.isStreaming = true;
+          this.emitStreamingStatus('live');
+          resolve();
+        } catch (err) {
+          console.error('Failed to start MediaRecorder:', err);
+          this.emitStreamingStatus('error');
+          reject(err as Error);
+        }
+      };
+
+      socket.onerror = (event) => {
+        console.error('Streaming socket error:', event);
+        this.emitStreamingStatus('error');
+        reject(new Error('WebSocket connection to relay failed'));
+      };
+
+      socket.onclose = () => {
+        if (this.isStreaming) {
+          // Unexpected close while we thought we were live
+          this.emitStreamingStatus('error');
+        }
+        this.isStreaming = false;
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+          this.mediaRecorder.stop();
+        }
+        this.mediaRecorder = null;
+        this.socket = null;
+      };
+    });
+  }
+
+  public stopStreaming() {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.mediaRecorder = null;
+
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+    }
+
+    this.isStreaming = false;
+    this.emitStreamingStatus('stopped');
+  }
+
+  // -------------------------------------------------------------
   // MUSIC & AUDIO TRACK PLAYBACK
   // -------------------------------------------------------------
 
@@ -296,7 +435,7 @@ class AudioEngine {
 
   public playCustomAudioUrl(url: string, trackId: string, onEnded?: () => void) {
     this.stopMusic();
-    this.getContext();
+    const ctx = this.getContext();
 
     this.activeTrackId = trackId;
     this.isMusicPlaying = true;
@@ -304,6 +443,13 @@ class AudioEngine {
     this.audioElement = new Audio(url);
     this.audioElement.crossOrigin = 'anonymous';
     this.audioElement.volume = this.baseMusicVolume;
+
+    // Route uploaded/custom tracks through the same music bus (ducking + broadcast)
+    // instead of playing directly to the speakers, so they're audible on-air too.
+    this.audioMediaSource = ctx.createMediaElementSource(this.audioElement);
+    if (this.musicGain) {
+      this.audioMediaSource.connect(this.musicGain);
+    }
 
     this.audioElement.onended = () => {
       this.isMusicPlaying = false;
@@ -334,6 +480,14 @@ class AudioEngine {
       this.audioElement.pause();
       this.audioElement.currentTime = 0;
       this.audioElement = null;
+    }
+    if (this.audioMediaSource) {
+      try {
+        this.audioMediaSource.disconnect();
+      } catch {
+        // ignore
+      }
+      this.audioMediaSource = null;
     }
     this.isMusicPlaying = false;
     this.activeTrackId = null;

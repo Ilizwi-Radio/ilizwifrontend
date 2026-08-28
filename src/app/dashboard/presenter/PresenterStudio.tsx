@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { Show, MusicTrack, SoundEffect } from '@/lib/types';
 import { audioEngine } from '@/lib/audioEngine';
@@ -28,11 +29,25 @@ import {
   MessageSquare,
   Send,
   Zap,
+  AlertTriangle,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const STREAM_URL = `${process.env.NEXT_PUBLIC_STREAM_URL}/live`;
 console.log("STREAM_URL =", STREAM_URL);
+
+// NOTE: NEXT_PUBLIC_* env vars ship in the client bundle, which means
+// NEXT_PUBLIC_RELAY_TOKEN is visible to anyone who opens dev tools.
+// Fine for early testing; before real use, swap this for a short-lived
+// token fetched from an authenticated backend endpoint
+// (e.g. GET /api/broadcast/relay-token) instead of a static shared secret.
+const RELAY_WS_URL = process.env.NEXT_PUBLIC_RELAY_URL || '';
+const RELAY_TOKEN = process.env.NEXT_PUBLIC_RELAY_TOKEN || '';
+
+type StreamStatus = 'idle' | 'connecting' | 'live' | 'error' | 'stopped';
+
 interface PresenterStudioProps {
   presenterId: string;
   presenterName: string;
@@ -55,6 +70,12 @@ export default function PresenterStudio({
   const [voiceIntensity, setVoiceIntensity] = useState(0);
   const [voicePeak, setVoicePeak] = useState(0);
   const [isSimulated, setIsSimulated] = useState(false);
+  const [isGoingLive, setIsGoingLive] = useState(false);
+
+  // Streaming (relay -> Icecast) connection status, separate from isBroadcasting
+  // so we can tell the presenter when audio has actually stopped reaching
+  // listeners even though the studio still thinks it's "on air."
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>('idle');
 
   // Shows & Selection
   const [shows, setShows] = useState<Show[]>([]);
@@ -146,6 +167,13 @@ export default function PresenterStudio({
     clearInterval(interval);
 }, []);
 
+useEffect(() => {
+  return audioEngine.subscribeStreamingStatus((status) => {
+    console.log("Streaming status:", status);
+    setStreamStatus(status);
+  });
+}, []);
+
   useEffect(() => {
   if (!broadcastId || !isBroadcasting) {
     return;
@@ -181,23 +209,60 @@ export default function PresenterStudio({
   const handleToggleBroadcast = async () => {
   if (!isBroadcasting) {
     if (!selectedShowId) {
+      console.log({ RELAY_WS_URL,  RELAY_TOKEN, });
         alert("Please select a show before going live.");
         return;
       }
+
+    if (!RELAY_WS_URL) {
+      alert("Streaming relay is not configured. Please contact an admin.");
+      return;
+    }
+
+    setIsGoingLive(true);
+
     try {
       const res = await audioEngine.startMicrophone();
+
+      if (res.simulated) {
+        // No real microphone was captured — going live now would broadcast
+        // dead air (or worse) to real listeners. Bail out instead of
+        // silently "succeeding" with a fake mic.
+        audioEngine.stopMicrophone();
+        alert(
+          "We couldn't access your microphone, so we can't go live. Please grant microphone permission in your browser and try again."
+        );
+        return;
+      }
+
+      try {
+        await audioEngine.startStreaming(`${RELAY_WS_URL}?token=${RELAY_TOKEN}`);
+      } catch (streamErr) {
+        audioEngine.stopMicrophone();
+        throw streamErr;
+      }
+
       console.log("STARTING BROADCAST");
       console.log("Selected Show:", selectedShowId);
       console.log("Stream URL:", STREAM_URL);
-      const broadcast = await startBroadcast(
-        selectedShowId,
-        STREAM_URL
-      );
+
+      let broadcast;
+      try {
+        broadcast = await startBroadcast(selectedShowId, STREAM_URL);
+      } catch (apiErr) {
+        // Streaming to Icecast succeeded but recording the broadcast in our
+        // own backend failed — don't leave the presenter "live" with no
+        // corresponding broadcast record. Tear everything back down.
+        audioEngine.stopStreaming();
+        audioEngine.stopMicrophone();
+        throw apiErr;
+      }
+
       console.log("Selected Show ID:", selectedShowId);
       console.log("Shows:", shows);
 
       setBroadcastId(broadcast.id);
-      setIsSimulated(res.simulated);
+      setIsSimulated(false);
       setIsBroadcasting(true);
       setIsMuted(false);
 
@@ -213,6 +278,9 @@ export default function PresenterStudio({
       }
     } catch (error) {
       console.error("Failed to start broadcast", error);
+      alert("Couldn't go live. Please check your connection and try again.");
+    } finally {
+      setIsGoingLive(false);
     }
   } else {
     try {
@@ -230,6 +298,7 @@ export default function PresenterStudio({
 
       audioEngine.stopMicrophone();
       audioEngine.stopMusic();
+      audioEngine.stopStreaming();
 
       setBroadcastId(null);
       setIsBroadcasting(false);
@@ -239,6 +308,17 @@ export default function PresenterStudio({
       setVoicePeak(0);
     } catch (error) {
       console.error("Failed to stop broadcast", error);
+      // Even if the API calls above failed, make sure we don't leave the
+      // mic/stream running locally — the presenter clicked "stop."
+      audioEngine.stopMicrophone();
+      audioEngine.stopMusic();
+      audioEngine.stopStreaming();
+      setBroadcastId(null);
+      setIsBroadcasting(false);
+      setIsPlayingMusic(false);
+      setBroadcastSeconds(0);
+      setVoiceIntensity(0);
+      setVoicePeak(0);
     }
   }
 };
@@ -380,11 +460,41 @@ export default function PresenterStudio({
 
   const activeShow = shows.find((s) => s.id === selectedShowId) || shows[0];
 
+  // Small badge describing relay/Icecast connection health, distinct from
+  // isBroadcasting (which only reflects local studio state).
+  const renderStreamStatusBadge = () => {
+    if (!isBroadcasting) return null;
+
+    if (streamStatus === 'live') {
+      return (
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60">
+          <Wifi className="w-3.5 h-3.5" /> Streaming to listeners
+        </div>
+      );
+    }
+
+    if (streamStatus === 'connecting') {
+      return (
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-stone-800 text-stone-300 border border-stone-700 animate-pulse">
+          <Wifi className="w-3.5 h-3.5" /> Connecting to stream…
+        </div>
+      );
+    }
+
+    // 'error' or 'stopped' while isBroadcasting is still true means the
+    // studio thinks it's live but audio isn't actually reaching Icecast.
+    return (
+      <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-red-950/80 text-red-300 border border-red-700/60">
+        <WifiOff className="w-3.5 h-3.5" /> Not reaching listeners — check connection
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8">
       {/* Studio Header Bar */}
       <div className="bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           {/* ON AIR Indicator Sign */}
           <div
             className={`px-4 py-2 rounded-xl flex items-center gap-2.5 font-mono text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${
@@ -400,6 +510,8 @@ export default function PresenterStudio({
             />
             {isBroadcasting ? 'ON AIR • LIVE BROADCAST' : 'OFF AIR • STUDIO READY'}
           </div>
+
+          {renderStreamStatusBadge()}
 
           {/* Show Selector */}
           <div className="flex items-center gap-2">
@@ -505,7 +617,8 @@ export default function PresenterStudio({
           {/* Huge Interactive Center Microphone Button */}
           <button
             onClick={handleToggleBroadcast}
-            className={`relative z-10 w-36 h-36 sm:w-44 sm:h-44 rounded-full flex flex-col items-center justify-center transition-all duration-300 transform active:scale-95 shadow-2xl cursor-pointer group ${
+            disabled={isGoingLive}
+            className={`relative z-10 w-36 h-36 sm:w-44 sm:h-44 rounded-full flex flex-col items-center justify-center transition-all duration-300 transform active:scale-95 shadow-2xl cursor-pointer group disabled:opacity-60 disabled:cursor-wait ${
               isBroadcasting
                 ? isMuted
                   ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_40px_rgba(217,119,6,0.5)] ring-8 ring-amber-500/30'
@@ -513,7 +626,14 @@ export default function PresenterStudio({
                 : 'bg-stone-800 hover:bg-stone-700 text-stone-300 border-4 border-stone-700 hover:border-emerald-600/60'
             }`}
           >
-            {isBroadcasting ? (
+            {isGoingLive ? (
+              <>
+                <Radio className="w-16 h-16 sm:w-20 sm:h-20 animate-pulse text-stone-300" />
+                <span className="text-xs font-mono font-bold uppercase mt-1 tracking-wider text-stone-300">
+                  CONNECTING…
+                </span>
+              </>
+            ) : isBroadcasting ? (
               isMuted ? (
                 <>
                   <MicOff className="w-16 h-16 sm:w-20 sm:h-20 animate-pulse text-amber-100" />
@@ -546,14 +666,15 @@ export default function PresenterStudio({
             {/* Go Live / Stop broadcast button */}
             <button
               onClick={handleToggleBroadcast}
-              className={`px-6 py-2.5 rounded-xl font-bold text-sm transition shadow-lg flex items-center gap-2 ${
+              disabled={isGoingLive}
+              className={`px-6 py-2.5 rounded-xl font-bold text-sm transition shadow-lg flex items-center gap-2 disabled:opacity-60 disabled:cursor-wait ${
                 isBroadcasting
                   ? 'bg-red-600 hover:bg-red-700 text-white'
                   : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950'
               }`}
             >
               <Radio className="w-4 h-4" />
-              {isBroadcasting ? 'End Broadcast' : 'Start Broadcasting'}
+              {isGoingLive ? 'Connecting…' : isBroadcasting ? 'End Broadcast' : 'Start Broadcasting'}
             </button>
 
             {/* Mute toggle button */}
@@ -592,9 +713,9 @@ export default function PresenterStudio({
             </span>
           </div>
 
-          {isSimulated && isBroadcasting && (
-            <p className="text-[11px] text-amber-400/90 font-mono">
-              💡 Studio Voice Simulator active (Microphone fallback). Speak or test audio.
+          {streamStatus === 'error' && isBroadcasting && (
+            <p className="text-[11px] text-red-400/90 font-mono flex items-center justify-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5" /> Lost connection to the stream relay. Listeners may not be hearing you.
             </p>
           )}
         </div>
