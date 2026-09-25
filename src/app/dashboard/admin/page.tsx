@@ -11,6 +11,8 @@ import { getPresenters,createPresenter, updatePresenter, deletePresenter,
   getCourses,createCourse,updateCourse,deleteCourse} from "@/lib/api";
 import RequireRole from "@/components/RequireRole";
 import DashboardHeader from "@/components/DashboardHeader";
+import ResetPasswordModal from "@/components/ResetPasswordModal";
+import { RowAction } from "@/components/AdminCollectionEditor";
 
 import AdminCollectionEditor, { FieldConfig } from "@/components/AdminCollectionEditor";
 import Link from "next/link";
@@ -114,13 +116,14 @@ function AdminContent() {
   const [eventsCount, setEventsCount] = useState(0);
   const [showsCount, setShowsCount] = useState(0);
   const [opportunitiesCount, setOpportunitiesCount] = useState(0);
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<any | null>(null);
 
 const songsCount = songs.length;
 const videosCount = videos.length;
 
-  const [genres, setGenres] = useState<string[]>([ "All"]);
-  const [tab, setTab] = useState<TabKey>("schedule");
-  const [genreInput, setGenreInput] = useState("");  
+const [genres, setGenres] = useState<string[]>([ "All"]);
+const [tab, setTab] = useState<TabKey>("schedule");
+const [genreInput, setGenreInput] = useState("");  
   useEffect(() => {
     getPresenters().then((data) => {
       setPresenters(data);
@@ -174,6 +177,29 @@ const refreshOpportunities = async () => { const data = await getOpportunities()
 const refreshSongs = async () => { const data = await getSongs();setSongs(data);};
 const refreshVideos = async () => { const data = await getVideos(); setVideos(data);};
 const refreshCourses = async () => { const data = await getCourses(); setCourses(data);};
+const handleResetPassword = async (
+  newPassword: string | null
+): Promise<{ temporaryPassword?: string }> => {
+  // --- STUB: replace with real API call ---
+  // const res = await resetPresenterPassword(resetPasswordTarget.id, newPassword);
+  // return res;
+ 
+  await new Promise((resolve) => setTimeout(resolve, 600)); // simulate network delay
+ 
+  if (newPassword) {
+    return {}; // admin set a specific password — nothing to show back
+  }
+  // simulate the backend generating one
+  return { temporaryPassword: "K7M2-QX9P" };
+  // --- end stub ---
+};
+const presenterRowActions: RowAction<any>[] = [
+  {
+    label: "Reset Password",
+    onClick: (presenter) => setResetPasswordTarget(presenter),
+    hidden: (presenter) => !presenter.user_id,
+  },
+];
   return (
     <div className="min-h-screen bg-stone-50">
       <DashboardHeader title="Admin Dashboard" subtitle="Full site content control" />
@@ -424,7 +450,7 @@ const refreshCourses = async () => { const data = await getCourses(); setCourses
               fields={careerFields}
               idPrefix="career"
               columns={["title", "category"]}
-             onAdd={async (item) => {
+              onAdd={async (item) => {
                 await createOpportunity(item);
                 await refreshOpportunities();
               }}
@@ -448,9 +474,10 @@ const refreshCourses = async () => { const data = await getCourses(); setCourses
               fields={presenterFields}
               idPrefix="presenter"
               columns={["display_name", "presenter_type"]}
-              onAdd={async (item) => { await createPresenter(item); await refreshPresenters();}}
-              onUpdate={async (id, patch) => { await updatePresenter(id, patch); await refreshPresenters();}}
-              onDelete={async (id) => {  await deletePresenter(id);  await refreshPresenters();}}
+              rowActions={presenterRowActions}
+              onAdd={async (item) => { await createPresenter(item); await refreshPresenters(); }}
+              onUpdate={async (id, patch) => { await updatePresenter(id, patch); await refreshPresenters(); }}
+              onDelete={async (id) => { await deletePresenter(id); await refreshPresenters(); }}
             />
           )}
           {tab === "genres" && (
@@ -463,11 +490,19 @@ const refreshCourses = async () => { const data = await getCourses(); setCourses
                     {g}
                   </span>
                 ))}
+                
               </div>
             </div>
           )}
         </div>
         </div>
+        {resetPasswordTarget && (
+          <ResetPasswordModal
+            presenterName={resetPasswordTarget.display_name}
+            onSubmit={handleResetPassword}
+            onClose={() => setResetPasswordTarget(null)}
+          />
+        )}
     </div>
   );
 }

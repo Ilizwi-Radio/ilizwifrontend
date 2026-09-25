@@ -86,7 +86,7 @@ export default function Hero() {
     const rawUrl = STREAM_URL;
 
     if (!rawUrl) {
-      alert("No live stream available.");
+      // alert("No live stream available.");
       return;
     }
 
@@ -98,16 +98,16 @@ export default function Hero() {
     console.log("PLAYING:", cleanStreamUrl);
 
     try {
-      console.log("liveBroadcast:", liveBroadcast);
-      console.log("rawUrl:", rawUrl);
-      console.log("cleanStreamUrl:", cleanStreamUrl);
+      // console.log("liveBroadcast:", liveBroadcast);
+      // console.log("rawUrl:", rawUrl);
+      // console.log("cleanStreamUrl:", cleanStreamUrl);
       const player = new Audio(cleanStreamUrl);
       await player.play();
       setAudio(player);
       setMediaSessionMetadata();
     } catch (error) {
       console.error("Playback failed:", error);
-      alert("Couldn't start playback. Please try again.");
+      // alert("Couldn't start playback. Please try again.");
     }
   };
 

@@ -11,6 +11,15 @@ export type FieldConfig = {
   placeholder?: string;
 };
 
+export type RowAction<T> = {
+  label: string;
+  onClick: (item: T) => void;
+  variant?: "default" | "danger";
+  /** Hide this action for a given row — e.g. hide "Reset Password" when the
+   * presenter has no linked login yet. */
+  hidden?: (item: T) => boolean;
+};
+
 type Row = Record<string, string | boolean | null | undefined> & { id: string };
 
 export default function AdminCollectionEditor<T extends Row>({
@@ -23,6 +32,7 @@ export default function AdminCollectionEditor<T extends Row>({
   onUpdate,
   onDelete,
   columns = ["title", "name"],
+  rowActions,
 }: {
   title: string;
   description?: string;
@@ -34,6 +44,9 @@ export default function AdminCollectionEditor<T extends Row>({
   onDelete: (id: string) => void;
   /** which field(s) to show as the row's primary label in the list */
   columns?: string[];
+  /** Optional extra buttons per row, beyond the built-in Edit/Delete —
+   * e.g. "Reset Password", "Link Account". */
+  rowActions?: RowAction<T>[];
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -168,13 +181,29 @@ export default function AdminCollectionEditor<T extends Row>({
         {items.map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-stone-50">
             <span className="text-sm text-stone-700 truncate">{label(item)}</span>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
+              {rowActions
+                ?.filter((action) => !action.hidden?.(item))
+                .map((action) => (
+                  <button
+                    key={action.label}
+                    onClick={() => action.onClick(item)}
+                    className={`text-xs font-semibold flex items-center gap-1 ${
+                      action.variant === "danger"
+                        ? "text-red-600 hover:text-red-700"
+                        : "text-stone-600 hover:text-stone-900"
+                    }`}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+
               <button onClick={() => startEdit(item)} className="text-xs font-semibold text-green-800 hover:text-green-900 flex items-center gap-1">
                 <Icon name="chevron" className="w-3.5 h-3.5" /> Edit
               </button>
               <button
                 onClick={() => {
-                  if (confirm("Delete this item? This can't be undone.")) onDelete(item.id);
+                  if (confirm(`Delete "${label(item)}"? This can't be undone.`)) onDelete(item.id);
                 }}
                 className="text-xs font-semibold text-red-600 hover:text-red-700"
               >
