@@ -204,14 +204,6 @@ export default function Hero() {
             </button>
              <button className="btn-pill bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-3 font-semibold flex items-center gap-2">
             <Icon name="globe" /> Learn a Language</button>
-
-            {audio && (
-              <button
-                onClick={handleStop}
-                className="btn-pill bg-red-600 hover:bg-red-700 px-6 py-3 font-semibold"
-              >
-                Stop
-              </button>)}
           </div>
           <div className="mt-3">
               {streamError && (
@@ -259,7 +251,7 @@ export default function Hero() {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleListenLive}
-                className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center shrink-0"
+                className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center transition-all"
               >
                 <Icon name={!audio ? "play" : isPlaying ? "pause" : "play"} />
               </button>
