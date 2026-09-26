@@ -171,13 +171,14 @@ export default function Hero() {
   }, [audio]);
 
   return (
-    <section id="top" className="hero-gradient triangle-bg text-white relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6 py-16 grid lg:grid-cols-2 gap-12 items-center relative">
-        <div>
-          <span className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 text-xs font-semibold mb-6">
+    <section id="top" className="hero-gradient triangle-bg text-white relative">
+      <div className=" max-w-7xl mx-auto px-4 sm:px-6 py-8 lg:py-16 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center relative">
+        
+        <div className= "order-2 lg:order-1">
+          <span className=" inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 text-xs font-semibold mb-6">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> BROADCASTING LIVE &nbsp;•&nbsp; {icecastStatus.listeners|| 0} LISTENERS
           </span>
-          <h1 className="display text-5xl sm:text-6xl leading-[1.05] mb-6">
+          <h1 className="display text-4xl sm:text-5xl lg:text-6xl leading-[1.05] mb-6">
             Where <span className="text-yellow-400">Africa</span>
             <br />
             Speaks &amp; the
@@ -188,14 +189,14 @@ export default function Hero() {
             Celebrating African culture through AI-powered broadcasting, music, language learning, and storytelling.
             Connect with the heartbeat of the continent — 24/7.
           </p>
-         <div className="flex gap-2">
+         <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleListenLive}
               disabled={!icecastStatus.online}
               className="btn-pill bg-orange-500 hover:bg-orange-600 px-6 py-3 font-semibold"
             >
               {!icecastStatus.online
-              ?"Currently off Air"
+              ?"Currently OFF Air"
               :!audio
                 ? "Listen Live Now"
                 : isPlaying
@@ -222,7 +223,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="bg-black/60 backdrop-blur rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+        <div className="order-1 lg:order-2 bg-black/60 backdrop-blur rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
           <div className="relative h-56 bg-gradient-to-br from-orange-800 via-orange-600 to-green-900 flex items-center justify-center">
             <span className={`absolute top-3 left-3 text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 ${icecastStatus.online ? "bg-red-600" : "bg-stone-700"}`}>
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> {icecastStatus.online?"LIVE NOW": "OFF AIR"}
@@ -234,9 +235,9 @@ export default function Hero() {
           <div className="p-5">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <div className="text-[11px] font-bold text-yellow-400 tracking-wide mb-1">{liveBroadcast?.show_title || "No Live Show"}</div>
-                <div className="font-bold text-lg">{liveBroadcast?.show_title || "No Live Show"}</div>
-                <div className="text-white/60 text-sm">{liveBroadcast?.presenter_name || "Unknown Presenter"} {" • "} {liveBroadcast?.language || ""}</div>
+                <div className="text-[11px] font-bold text-yellow-400 tracking-wide mb-1">{liveBroadcast?.show_title || "Stay Tuned"}</div>
+                <div className="font-bold text-lg">{liveBroadcast?.show_title || "Stay Tuned"}</div>
+                <div className="text-white/60 text-sm">{liveBroadcast?.presenter_name || "ILIZWI RADIO"} {" • "} {liveBroadcast?.language || ""}</div>
               </div>
               <div className="text-right">
                 <div className="text-[11px] text-white/50">Listeners</div>
@@ -251,7 +252,7 @@ export default function Hero() {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleListenLive}
-                className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center transition-all"
+                className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center hover:scale-[1.01] transition-all duration-300"
               >
                 <Icon name={!audio ? "play" : isPlaying ? "pause" : "play"} />
               </button>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '@/lib/auth';
-import { Menu, Radio, Mic, Headphones } from 'lucide-react';
+import { Menu, Radio, Mic, Headphones, Globe } from 'lucide-react';
+import Link from 'next/link';
 
 interface DashboardHeaderProps {
   title: string;
@@ -21,6 +22,13 @@ export default function DashboardHeader({
     <header className="bg-white border-b border-stone-200 sticky top-0 z-30 px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="hidden sm:flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-900 transition"
+          >
+            <Globe className="w-4 h-4" />
+            View Website
+          </Link>
           {onOpenMobileMenu && (
             <button
               onClick={onOpenMobileMenu}
@@ -45,6 +53,8 @@ export default function DashboardHeader({
           </div>
         </div>
 
+        
+
         {/* Right side Presenter badge */}
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex flex-col items-end">
@@ -59,7 +69,7 @@ export default function DashboardHeader({
           <div
             className="w-10 h-10 rounded-xl shadow-xs flex items-center justify-center font-bold text-sm text-white"
             style={{
-              background: `linear-gradient(135deg, #15803d '#0f172a)`,
+              background: 'linear-gradient(135deg, #15803d, #0f172a)',
             }}
           >
             {user?.full_name?.charAt(0) || 'P'}
