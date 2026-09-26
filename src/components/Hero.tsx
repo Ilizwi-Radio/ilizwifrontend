@@ -18,7 +18,9 @@ export default function Hero() {
   const [bars, setBars] = useState<Bar[]>(STATIC_BARS);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [liveBroadcast, setLiveBroadcast] = useState<any>(null);
-
+  const [volume, setVolume] = useState(0.7);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [streamError, setStreamError] = useState(false);
   const BASE_STREAM_URL = process.env.NEXT_PUBLIC_STREAM_URL ?? "";
   const STREAM_URL = `${BASE_STREAM_URL.replace(/\/$/, "")}/live`;
 
@@ -59,12 +61,13 @@ export default function Hero() {
     });
     navigator.mediaSession.playbackState = "playing";
 
-    // Let the OS-level media controls (lock screen, notification, Chromecast)
-    // drive play/pause instead of leaving them dead.
-    navigator.mediaSession.setActionHandler("play", () => handleListenLive());
-    navigator.mediaSession.setActionHandler("pause", () => handleListenLive());
-    navigator.mediaSession.setActionHandler("stop", () => handleListenLive());
-  };
+    navigator.mediaSession.setActionHandler("play", async () => {
+       if (audio) { await audio.play();   setIsPlaying(true);}});
+
+    navigator.mediaSession.setActionHandler("pause", () => {
+      if (audio) { audio.pause();    setIsPlaying(false); }});
+
+    navigator.mediaSession.setActionHandler("stop", () => {handleStop(); }); };
 
   const clearMediaSession = () => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
@@ -73,43 +76,57 @@ export default function Hero() {
   };
 
   const handleListenLive = async () => {
-    // Stop path — always available even if the API hasn't returned yet.
-    if (audio) {
-      audio.pause();
-      audio.src = "";
-      audio.load(); // forces the browser to actually drop the Icecast connection
-      setAudio(null);
-      clearMediaSession();
+    if(!icecastStatus.online) {
+      setStreamError(true);
       return;
     }
-
-    const rawUrl = STREAM_URL;
-
-    if (!rawUrl) {
-      // alert("No live stream available.");
-      return;
-    }
-
-    const cleanStreamUrl = rawUrl
-      .trim()
-      .replace(/^"(.*)"$/, "$1")
-      .replace(/;$/, "");
-
-    console.log("PLAYING:", cleanStreamUrl);
-
+    setStreamError(false);
     try {
-      // console.log("liveBroadcast:", liveBroadcast);
-      // console.log("rawUrl:", rawUrl);
-      // console.log("cleanStreamUrl:", cleanStreamUrl);
-      const player = new Audio(cleanStreamUrl);
-      await player.play();
-      setAudio(player);
-      setMediaSessionMetadata();
-    } catch (error) {
-      console.error("Playback failed:", error);
-      // alert("Couldn't start playback. Please try again.");
+      // First click: create player
+      if (!audio) {
+        const player = new Audio(STREAM_URL);
+
+        player.onplay = () => setIsPlaying(true);
+        player.onpause = () => setIsPlaying(false);
+        player.onended = () => {
+          setIsPlaying(false);
+          setAudio(null);
+        };
+        player.volume = volume;
+
+        await player.play();
+
+        setAudio(player);
+        setIsPlaying(true);
+        setMediaSessionMetadata();
+
+        return;
+      }
+
+      // Toggle play/pause
+      if (isPlaying) {
+        audio.pause();
+      } else {
+        await audio.play();
+      }
+    } catch (err) {
+      setStreamError(true);
+      console.error(err);
     }
   };
+
+  const handleStop = () => {
+  if (!audio) return;
+
+  audio.pause();
+  audio.src = "";
+  audio.load();
+
+  setAudio(null);
+  setIsPlaying(false);
+
+  clearMediaSession();
+};
 
   useEffect(() => {
     getBroadcastStatus()
@@ -171,17 +188,38 @@ export default function Hero() {
             Celebrating African culture through AI-powered broadcasting, music, language learning, and storytelling.
             Connect with the heartbeat of the continent — 24/7.
           </p>
-          <div className="flex flex-wrap gap-4 mb-10">
+         <div className="flex gap-2">
             <button
               onClick={handleListenLive}
-              className="btn-pill bg-orange-500 hover:bg-orange-600 px-6 py-3 font-semibold flex items-center gap-2"
+              disabled={!icecastStatus.online}
+              className="btn-pill bg-orange-500 hover:bg-orange-600 px-6 py-3 font-semibold"
             >
-              <Icon name="play" />
-              {audio ? "Stop Listening" : "Listen Live Now"}
+              {!icecastStatus.online
+              ?"Currently off Air"
+              :!audio
+                ? "Listen Live Now"
+                : isPlaying
+                ? "Pause"
+                : "Resume"}
             </button>
-            <button className="btn-pill bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-3 font-semibold flex items-center gap-2">
-              <Icon name="globe" /> Learn a Language
-            </button>
+             <button className="btn-pill bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-3 font-semibold flex items-center gap-2">
+            <Icon name="globe" /> Learn a Language</button>
+
+            {audio && (
+              <button
+                onClick={handleStop}
+                className="btn-pill bg-red-600 hover:bg-red-700 px-6 py-3 font-semibold"
+              >
+                Stop
+              </button>)}
+          </div>
+          <div className="mt-3">
+              {streamError && (
+                <div className="text-yellow-400 text-sm mb-3">
+              No presenter is currently live. Please check back later.
+              </div>
+            )}
+           
           </div>
           <div className="grid grid-cols-3 gap-3 max-w-lg">
             <div className="bg-white/8 border border-white/10 rounded-xl p-3">
@@ -223,13 +261,14 @@ export default function Hero() {
                 onClick={handleListenLive}
                 className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center shrink-0"
               >
-                <Icon name="play" />
+                <Icon name={!audio ? "play" : isPlaying ? "pause" : "play"} />
               </button>
               <Icon name="vol" className="w-4 h-4 text-white/60" />
-              <div className="flex-1 h-1.5 rounded-full bg-white/15 overflow-hidden">
-                <div className="h-full w-2/3 bg-gradient-to-r from-yellow-400 to-orange-500" />
-              </div>
-              <span className="text-[11px] font-semibold text-white/70">{audio ? "LIVE" : "OFF AIR"}</span>
+              <input type="range"  min="0"  max="1"  step="0.01" value={volume} onChange={(e) => {
+                const v = Number(e.target.value);
+                setVolume(v);
+                if (audio) {audio.volume = v;}}} className="flex-1"/>
+              <span className="text-[11px] font-semibold text-white/70">{!audio ? "OFF AIR":isPlaying ? "LIVE" : "PAUSED"}</span>
             </div>
           </div>
         </div>
