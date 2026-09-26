@@ -44,9 +44,9 @@ export default function Navbar({ user,onProfileClick }: {  user: any; onProfileC
             <button onClick={onProfileClick} className="hidden sm:flex w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 items-center justify-center">
               <Icon name="user" /> 
             </button>
-            <button className="btn-pill bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 flex items-center gap-2">
+            {/* <button className="btn-pill bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" /> LISTEN LIVE
-            </button>
+            </button> */}
           </div>
         </div>
       </header>
