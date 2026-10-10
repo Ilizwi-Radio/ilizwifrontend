@@ -12,7 +12,8 @@ export async function createVideo(
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(video)
     }
@@ -30,7 +31,8 @@ export async function updateVideo(
     {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(video)
     }
@@ -44,17 +46,25 @@ export async function deleteVideo(
   const response = await fetch(
     `${API_URL}/api/videos/${id}`,
     {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
     }
   );
 
   return response.json();
 }
 
-export async function getVideos() {
-  const url = `${API_URL}/api/videos`;
-  const response = await fetch(url);
-  
+export async function getVideos(
+  includeHidden = false
+) {
+  const response = await fetch(
+    `${API_URL}/api/videos${includeHidden ? "?includeHidden=true" : ""}`,
+    includeHidden
+      ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      : undefined
+  );
 
   return response.json();
 }
@@ -67,7 +77,8 @@ export async function createSong(
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(song)
     }
@@ -85,7 +96,8 @@ export async function updateSong(
     {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(song)
     }
@@ -100,16 +112,24 @@ export async function deleteSong(
   const response = await fetch(
     `${API_URL}/api/songs/${id}`,
     {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
     }
   );
 
   return response.json();
 }
 
-export async function getSongs() {
+export async function getSongs(
+  includeHidden = false
+) {
   const response = await fetch(
-    `${API_URL}/api/songs`
+    `${API_URL}/api/songs${includeHidden ? "?includeHidden=true" : ""}`,
+    includeHidden
+      ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      : undefined
   );
 
   return response.json();
@@ -123,7 +143,8 @@ export async function createEvent(
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(event)
     }
@@ -138,26 +159,41 @@ export async function updateEvent(
   const response = await fetch(
     `${API_URL}/api/events/${id}`,
     {
-      method: "UPDATE"}
-    );
-      return response.json()
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      },
+      body: JSON.stringify(event)
     }
+  );
+
+  return response.json();
+}
 export async function deleteEvent(
   id: string
 ) {
   const response = await fetch(
     `${API_URL}/api/events/${id}`,
     {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
     }
   );
 
   return response.json();
 }
 
-export async function getEvents() {
+export async function getEvents(
+  includeHidden = false
+) {
   const response = await fetch(
-    `${API_URL}/api/events`
+    `${API_URL}/api/events${includeHidden ? "?includeHidden=true" : ""}`,
+    includeHidden
+      ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      : undefined
   );
 
   return response.json();
@@ -187,7 +223,8 @@ export async function createCourse(
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(course)
     }
@@ -205,7 +242,8 @@ export async function updateCourse(
     {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(course)
     }
@@ -219,15 +257,23 @@ export async function deleteCourse(
   const response = await fetch(
     `${API_URL}/api/language/courses/${id}`,
     {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
     }
   );
 
   return response.json();
 }
-export async function getCourses() {
+export async function getCourses(
+  includeHidden = false
+) {
   const response = await fetch(
-    `${API_URL}/api/language/courses`
+    `${API_URL}/api/language/courses${includeHidden ? "?includeHidden=true" : ""}`,
+    includeHidden
+      ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      : undefined
   );
 
   return response.json();
@@ -242,7 +288,8 @@ export async function createShow(
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(show)
     }
@@ -260,7 +307,8 @@ export async function updateShow(
     {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(show)
     }
@@ -275,16 +323,24 @@ export async function deleteShow(
   const response = await fetch(
     `${API_URL}/api/shows/${id}`,
     {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
     }
   );
 
   return response.json();
 }
 
-export async function getShows() {
+export async function getShows(
+  includeHidden = false
+) {
   const response = await fetch(
-    `${API_URL}/api/shows`
+    `${API_URL}/api/shows${includeHidden ? "?includeHidden=true" : ""}`,
+    includeHidden
+      ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      : undefined
   );
 
   return response.json();
@@ -472,7 +528,8 @@ export async function createOpportunity(
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(opportunity)
     }
@@ -490,7 +547,8 @@ export async function updateOpportunity(
     {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(opportunity)
     }
@@ -505,15 +563,50 @@ export async function deleteOpportunity(
   const response = await fetch(
     `${API_URL}/api/opportunities/${id}`,
     {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
     }
   );
 
   return response.json();
 }
-export async function getOpportunities() {
+export async function getOpportunities(
+  includeHidden = false
+) {
   const response = await fetch(
-    `${API_URL}/api/opportunities`
+    `${API_URL}/api/opportunities${includeHidden ? "?includeHidden=true" : ""}`,
+    includeHidden
+      ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      : undefined
+  );
+
+  return response.json();
+}
+
+//=== Site Settings ===//
+export async function getSiteSettings() {
+  const response = await fetch(
+    `${API_URL}/api/site-settings`
+  );
+
+  return response.json();
+}
+
+export async function updateSiteSettings(
+  settings: any
+) {
+  const response = await fetch(
+    `${API_URL}/api/site-settings`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      },
+      body: JSON.stringify(settings),
+    }
   );
 
   return response.json();
@@ -578,6 +671,7 @@ export async function createPresenter(
         headers: {
           "Content-Type":
             "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body:
           JSON.stringify(
@@ -601,7 +695,8 @@ export async function updatePresenter(
         method: "PUT",
         headers: {
           "Content-Type":
-            "application/json"
+            "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
         },
         body:
           JSON.stringify(
@@ -621,7 +716,10 @@ export async function deletePresenter(
     await fetch(
       `${API_URL}/api/presenters/${id}`,
       {
-        method: "DELETE"
+        method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
       }
     );
 
@@ -828,6 +926,9 @@ export async function deleteMusicTrack(id: string) {
     `${API_URL}/api/music-tracks/${id}`,
     {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
     }
   );
 

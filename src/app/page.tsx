@@ -13,8 +13,9 @@ import Careers from "@/components/Careers";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
-
+import { getSiteSettings } from "@/lib/api";
 export default function Home() {
+  const [sections, setSections] = useState<Record<string, boolean>>({});
   const [isProfileOpen,setIsProfileOpen] = useState(false);
   const [user,setUser] = useState<any>(null);
   console.log("CURRENT USER:", user);
@@ -32,6 +33,28 @@ export default function Home() {
     }
   }, []);
 
+  useEffect(() => {
+  getSiteSettings()
+    .then((data) => {
+      setSections(
+        data?.homepage_sections ?? {}
+      );
+    })
+    .catch(console.error);
+}, []);
+
+useEffect(() => {
+  getSiteSettings()
+    .then((data) => {
+      console.log("SITE SETTINGS", data);
+
+      setSections(
+        data?.homepage_sections ?? {}
+      );
+    })
+    .catch(console.error);
+}, []);
+
   return (
     <main>
       <Navbar user={user} onProfileClick={() => setIsProfileOpen(true) }/>
@@ -44,14 +67,14 @@ export default function Home() {
         setUser(user);
          }}/>
       <Hero />
-      <LiveBroadcasts />
-      <MusicLibrary />
+      {sections.liveSessions !== false && (<LiveBroadcasts />)}
+      {sections.music !== false && ( <MusicLibrary />)}
       <BadgePromo />
-      <VideoHub />
-      <LanguageHub />
-      <Events />
+      {sections.videos !== false && ( <VideoHub />)}
+      {sections.languages !== false && (<LanguageHub />)}
+      {sections.events !== false && ( <Events />)}
       <Community />
-      <Careers />
+      {sections.careers !== false && (  <Careers />)}
       <Newsletter />
       <Footer />
     </main>
