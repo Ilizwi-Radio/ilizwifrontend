@@ -18,7 +18,7 @@ export default function Home() {
   const [sections, setSections] = useState<Record<string, boolean>>({});
   const [isProfileOpen,setIsProfileOpen] = useState(false);
   const [user,setUser] = useState<any>(null);
-  console.log("CURRENT USER:", user);
+  // console.log("CURRENT USER:", user);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import RequireRole from '@/components/RequireRole';
 import Sidebar from './Sidebar';
 import DashboardHeader from './DashboardHeader';
@@ -22,12 +22,14 @@ function PresenterAppContent() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('studio');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showsCount, setShowsCount] = useState(0);
+  const [requestedShowId, setRequestedShowId] = useState('');
 
   useEffect(() => {
     getShows().then((shows) => setShowsCount(shows.length));
   }, []);
 
   const handleGoLiveWithShow = (showId: string) => {
+    setRequestedShowId(showId);
     setActiveTab('studio');
   };
 
@@ -99,6 +101,7 @@ function PresenterAppContent() {
                 <PresenterStudio
                   presenterId={user?.id || 'pres-1'}
                   presenterName={user?.full_name || 'Presenter'}
+                  initialShowId={requestedShowId}
                   onNavigateToShows={() => setActiveTab('shows')}
                   onNavigateToMusic={() => setActiveTab('music')}
                 />
@@ -126,11 +129,5 @@ function PresenterAppContent() {
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <RequireRole role="presenter">
-        <PresenterAppContent />
-      </RequireRole>
-    </AuthProvider>
-  );
+  return <RequireRole role="presenter"><PresenterAppContent /></RequireRole>;
 }

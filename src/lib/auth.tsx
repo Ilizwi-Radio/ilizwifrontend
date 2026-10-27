@@ -60,6 +60,9 @@ export function AuthProvider({
   useEffect(() => {
     refreshUser();
     setLoading(false);
+    const syncUser = () => refreshUser();
+    window.addEventListener("storage", syncUser);
+    return () => window.removeEventListener("storage", syncUser);
   }, []);
 
   const logout = () => {

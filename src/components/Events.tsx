@@ -10,8 +10,7 @@ export default function Events() {
   const [events, setEvents] =  useState<any[]>([]);
   const handleRegister = async (eventId: string) => {
     const token = localStorage.getItem("token");
-    console.log("Token from localStorage:", token);
-    console.log("User:",localStorage.getItem("user"));
+    // console.log("User:",localStorage.getItem("user"));
       if (!token) {
         alert("Please log in to register for events.");
         return;

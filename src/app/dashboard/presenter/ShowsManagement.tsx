@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Show, Presenter } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
-import { getShows, getPresenters, createShow, updateShow, deleteShow } from '@/lib/api';
+import { getShows, getPresenters, getMyPresenterProfile, createShow, updateShow, deleteShow } from '@/lib/api';
 import {
   Calendar,
   Plus,
@@ -21,7 +21,7 @@ interface ShowsManagementProps {
 
 export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementProps) {
   const { user } = useAuth();
-  const presenterId = user?.id;
+  const [presenterId, setPresenterId] = useState<string | undefined>();
 
   const [shows, setShows] = useState<Show[]>([]);
   const [presentersCount, setPresentersCount] = useState(0);
@@ -38,6 +38,12 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
   };
 
   useEffect(() => {
+    getMyPresenterProfile()
+      .then((profile) => setPresenterId(profile.id))
+      .catch((error) => {
+        if (error instanceof Error && error.message.startsWith("Your session expired")) return;
+        console.error(error);
+      });
     getShows()
       .then((data) => {
         setShows(data);
@@ -50,7 +56,7 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
         setPresentersCount(data.length);
       })
       .catch(console.error);
-  }, [presenterId]);
+  }, []);
 
   const startAdd = () => {
     setEditingId(null);
@@ -116,8 +122,7 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
     }
   };
 
-  const myShows = shows.filter((s) => s.presenter_id === presenterId || shows.length <= 2);
-  const displayShows = myShows.length > 0 ? myShows : shows;
+  const displayShows = shows.filter((s) => s.presenter_id === presenterId);
 
   return (
     <div className="space-y-8">
@@ -205,7 +210,7 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
               <input
                 required
                 value={form.show_type}
-                onChange={(e) => setForm((p) => ({ ...p, tag: e.target.value }))}
+                onChange={(e) => setForm((p) => ({ ...p, show_type: e.target.value }))}
                 placeholder="e.g. 15:00 - 18:00 or WEEKDAYS"
                 className="w-full rounded-xl bg-stone-950 border border-stone-700 px-3.5 py-2.5 text-sm text-white outline-none focus:border-green-500"
               />
@@ -215,17 +220,28 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
               <label className="block text-xs font-semibold text-stone-300 mb-1.5">Language</label>
               <input
                 value={form.language_code}
-                onChange={(e) => setForm((p) => ({ ...p, lang: e.target.value }))}
+                onChange={(e) => setForm((p) => ({ ...p, language_code: e.target.value }))}
                 placeholder="e.g. English"
                 className="w-full rounded-xl bg-stone-950 border border-stone-700 px-3.5 py-2.5 text-sm text-white outline-none focus:border-green-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-stone-300 mb-1.5">Expected Listeners</label>
+              <label className="block text-xs font-semibold text-stone-300 mb-1.5">Scheduled Start</label>
               <input
-                onChange={(e) => setForm((p) => ({ ...p, listeners: e.target.value }))}
-                placeholder="e.g. 12,500"
+                type="datetime-local"
+                value={form.scheduled_start ? form.scheduled_start.slice(0, 16) : ''}
+                onChange={(e) => setForm((p) => ({ ...p, scheduled_start: e.target.value }))}
+                className="w-full rounded-xl bg-stone-950 border border-stone-700 px-3.5 py-2.5 text-sm text-white outline-none focus:border-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-300 mb-1.5">Scheduled End</label>
+              <input
+                type="datetime-local"
+                value={form.scheduled_end ? form.scheduled_end.slice(0, 16) : ''}
+                onChange={(e) => setForm((p) => ({ ...p, scheduled_end: e.target.value }))}
                 className="w-full rounded-xl bg-stone-950 border border-stone-700 px-3.5 py-2.5 text-sm text-white outline-none focus:border-green-500"
               />
             </div>
@@ -233,7 +249,8 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-stone-300 mb-1.5">Genre / Description</label>
               <input
-                onChange={(e) => setForm((p) => ({ ...p, genre: e.target.value }))}
+                value={form.description}
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                 placeholder="e.g. Soul / Talk / Late Night Call-ins"
                 className="w-full rounded-xl bg-stone-950 border border-stone-700 px-3.5 py-2.5 text-sm text-white outline-none focus:border-green-500"
               />

@@ -113,6 +113,13 @@ class AudioEngine {
     return this.ctx;
   }
 
+  /** Returns the full mixed broadcast bus used by the live stream. */
+  public getBroadcastStream(): MediaStream {
+    if (!this.streamDestination) this.getContext();
+    if (!this.streamDestination) throw new Error('Broadcast audio is not available');
+    return this.streamDestination.stream;
+  }
+
   /**
    * Start capturing real microphone
    */
@@ -318,8 +325,9 @@ class AudioEngine {
    * incoming WebM/Opus chunks into ffmpeg, which pushes them into Icecast.
    *
    * @param relayWsUrl e.g. "wss://your-relay-domain/broadcast"
+   * @param relayToken short-lived token issued by the authenticated backend
    */
-  public startStreaming(relayWsUrl: string): Promise<void> {
+  public startStreaming(relayWsUrl: string, relayToken: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.isStreaming) {
         resolve();
@@ -335,7 +343,7 @@ class AudioEngine {
 
       this.emitStreamingStatus('connecting');
 
-      const socket = new WebSocket(relayWsUrl);
+      const socket = new WebSocket(relayWsUrl, ['ilizwi-relay', relayToken]);
       this.socket = socket;
 
       socket.onopen = () => {

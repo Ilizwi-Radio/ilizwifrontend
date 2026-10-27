@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Icon from "./Icon";
-import { getBroadcastStatus,getIcecastStatus } from "@/lib/api";
+import { getBroadcastStatus } from "@/lib/api";
 
 type Bar = { height: number; delay: number };
+const ZENO_STREAM_URL = "https://stream.zeno.fm/mlevckhyptmvv";
+const ZENO_METADATA_URL = "https://api.zeno.fm/mounts/metadata/subscribe/mlevckhyptmvv";
 
 // Deterministic fallback used for the server-rendered markup so it matches
 // what React expects on the very first client render (avoids hydration
@@ -18,33 +20,37 @@ export default function Hero() {
   const [bars, setBars] = useState<Bar[]>(STATIC_BARS);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [liveBroadcast, setLiveBroadcast] = useState<any>(null);
+  const [nowPlaying, setNowPlaying] = useState<{ title: string; artist: string } | null>(null);
   const [volume, setVolume] = useState(0.7);
   const [isPlaying, setIsPlaying] = useState(false);
   const [streamError, setStreamError] = useState(false);
-  const BASE_STREAM_URL = process.env.NEXT_PUBLIC_STREAM_URL ?? "";
-  const STREAM_URL = `${BASE_STREAM_URL.replace(/\/$/, "")}/live`;
 
-  const [icecastStatus, setIcecastStatus] = useState({online: false, listeners: 0, bitrate: 0,});
   useEffect(() => {
-      const loadIcecast = async () => {
-        try {
-          const data = await getIcecastStatus();
-          setIcecastStatus(data);
-        } catch (err) {
-          console.error(err);
+    const metadataStream = new EventSource(ZENO_METADATA_URL);
+
+    metadataStream.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const streamTitle = typeof data.streamTitle === "string" ? data.streamTitle.trim() : "";
+        const title = streamTitle || data.title || data.songTitle || "";
+        const artist = typeof data.artist === "string" ? data.artist.trim() : "";
+        const separator = title.indexOf(" - ");
+
+        if (separator > 0 && !artist) {
+          setNowPlaying({
+            artist: title.slice(0, separator).trim(),
+            title: title.slice(separator + 3).trim(),
+          });
+        } else if (title) {
+          setNowPlaying({ title, artist });
         }
-      };
+      } catch (error) {
+        console.error("Unable to read Zeno now-playing metadata.", error);
+      }
+    };
 
-      loadIcecast();
-
-      const interval = setInterval(
-        loadIcecast,
-        10000
-      );
-
-      return () => clearInterval(interval);
-    }, []);
-
+    return () => metadataStream.close();
+  }, []);
   const setMediaSessionMetadata = () => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
 
@@ -76,15 +82,11 @@ export default function Hero() {
   };
 
   const handleListenLive = async () => {
-    if(!icecastStatus.online) {
-      setStreamError(true);
-      return;
-    }
     setStreamError(false);
     try {
       // First click: create player
       if (!audio) {
-        const player = new Audio(STREAM_URL);
+        const player = new Audio(ZENO_STREAM_URL);
 
         player.onplay = () => setIsPlaying(true);
         player.onpause = () => setIsPlaying(false);
@@ -176,7 +178,7 @@ export default function Hero() {
         
         <div className= "order-2 lg:order-1">
           <span className=" inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 text-xs font-semibold mb-6">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> BROADCASTING LIVE &nbsp;•&nbsp; {icecastStatus.listeners|| 0} LISTENERS
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> ILIZWI RADIO &nbsp;•&nbsp; 24/7 STREAM
           </span>
           <h1 className="display text-4xl sm:text-5xl lg:text-6xl leading-[1.05] mb-6">
             Where <span className="text-yellow-400">Africa</span>
@@ -192,12 +194,9 @@ export default function Hero() {
          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleListenLive}
-              disabled={!icecastStatus.online}
               className="btn-pill bg-orange-500 hover:bg-orange-600 px-6 py-3 font-semibold"
             >
-              {!icecastStatus.online
-              ?"Currently OFF Air"
-              :!audio
+              {!audio
                 ? "Listen Live Now"
                 : isPlaying
                 ? "Pause"
@@ -209,7 +208,7 @@ export default function Hero() {
           <div className="mt-3">
               {streamError && (
                 <div className="text-yellow-400 text-sm mb-3">
-              No presenter is currently live. Please check back later.
+              The radio stream could not be reached. Please try again in a moment.
               </div>
             )}
            
@@ -225,8 +224,8 @@ export default function Hero() {
 
         <div className="order-1 lg:order-2 bg-black/60 backdrop-blur rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
           <div className="relative h-56 bg-gradient-to-br from-orange-800 via-orange-600 to-green-900 flex items-center justify-center">
-            <span className={`absolute top-3 left-3 text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 ${icecastStatus.online ? "bg-red-600" : "bg-stone-700"}`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> {icecastStatus.online?"LIVE NOW": "OFF AIR"}
+            <span className="absolute top-3 left-3 text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 bg-red-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> 24/7 RADIO
             </span>
             <span className="text-2xl sm:text-3xl font-extrabold tracking-wide">
               iLIZWI <span className="text-orange-300">RADIO</span>
@@ -235,13 +234,13 @@ export default function Hero() {
           <div className="p-5">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <div className="text-[11px] font-bold text-yellow-400 tracking-wide mb-1">{liveBroadcast?.show_title || "Stay Tuned"}</div>
-                <div className="font-bold text-lg">{liveBroadcast?.show_title || "Stay Tuned"}</div>
-                <div className="text-white/60 text-sm">{liveBroadcast?.presenter_name || "ILIZWI RADIO"} {" • "} {liveBroadcast?.language || ""}</div>
+                <div className="text-[11px] font-bold text-yellow-400 tracking-wide mb-1">{liveBroadcast?.show_title || (nowPlaying ? "NOW PLAYING" : "Stay Tuned")}</div>
+                <div className="font-bold text-lg">{nowPlaying?.title || liveBroadcast?.track_title || liveBroadcast?.show_title || "Stay Tuned"}</div>
+                <div className="text-white/60 text-sm">{nowPlaying?.artist || liveBroadcast?.track_artist || liveBroadcast?.presenter_name || "ILIZWI RADIO"}{liveBroadcast?.language ? ` • ${liveBroadcast.language}` : ""}</div>
               </div>
               <div className="text-right">
-                <div className="text-[11px] text-white/50">Listeners</div>
-                <div className="font-bold text-yellow-400">{icecastStatus.listeners|| 0}</div>
+                <div className="text-[11px] text-white/50">Broadcast</div>
+                <div className="font-bold text-yellow-400">24/7</div>
               </div>
             </div>
             <div className="wave mb-4">

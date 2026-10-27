@@ -2,7 +2,14 @@ import { Show, Presenter, MusicTrack, SoundEffect } from './types';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL;
 
-console.log("API_URL =", API_URL);
+function clearExpiredSession() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.dispatchEvent(new Event("storage"));
+}
+
+// console.log("API_URL =", API_URL);
 //=== Videos===//
 export async function createVideo(
   video: any
@@ -213,6 +220,37 @@ export async function getPresenters() {
   );
 
   return response.json();
+}
+
+export async function getMyPresenterProfile() {
+  const response = await fetch(`${API_URL}/api/presenters/me/profile`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  });
+  const data = await response.json();
+  if (response.status === 401) {
+    clearExpiredSession();
+    throw new Error("Your session expired. Please sign in again.");
+  }
+  if (!response.ok) throw new Error(data.error || "Failed to load presenter profile.");
+  return data;
+}
+
+export async function updateMyPresenterProfile(profile: { presenter_type: string; bio: string }) {
+  const response = await fetch(`${API_URL}/api/presenters/me/profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+    body: JSON.stringify(profile),
+  });
+  const data = await response.json();
+  if (response.status === 401) {
+    clearExpiredSession();
+    throw new Error("Your session expired. Please sign in again.");
+  }
+  if (!response.ok) throw new Error(data.error || "Failed to update presenter profile.");
+  return data;
 }
 //=== COurses ===//
 export async function createCourse(
@@ -726,6 +764,37 @@ export async function deletePresenter(
   return response.json();
 }
 
+export async function resetPresenterPassword(
+  id: string,
+  newPassword: string | null
+): Promise<{ temporaryPassword?: string }> {
+  const response = await fetch(`${API_URL}/api/admin/presenters/${id}/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+    body: JSON.stringify(newPassword ? { newPassword } : {}),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to reset password.");
+  return data;
+}
+
+export async function linkPresenterAccount(id: string, email: string) {
+  const response = await fetch(`${API_URL}/api/admin/presenters/${id}/link-account`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+    body: JSON.stringify({ email }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to link presenter account.");
+  return data.presenter;
+}
+
 
 
 // === LIVE BROADCASTING ====//
@@ -776,13 +845,26 @@ export async function getBroadcastStatus() {
 
   const text = await response.text();
 
-  console.log("Broadcast Status Response:", text);
+  // console.log("Broadcast Status Response:", text);
 
   if (!text) {
     return null;
   }
 
   return JSON.parse(text);
+}
+
+export async function getBroadcastRelayToken(): Promise<string> {
+  const response = await fetch(`${API_URL}/api/broadcast/relay-token`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    },
+  });
+  const data = await response.json();
+  if (!response.ok || typeof data.token !== "string") {
+    throw new Error(data.error || "Could not authorize the broadcast relay.");
+  }
+  return data.token;
 }
 
 export async function updateListenerCount(

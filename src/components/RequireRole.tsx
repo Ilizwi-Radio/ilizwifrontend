@@ -12,15 +12,17 @@ export default function RequireRole({ role, children }: { role: Role; children: 
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      console.log("NO USER FOUND");
+      router.replace("/auth");
       return;
     }
-    if (user.role !== role) {
-      router.replace(`/dashboard/${user.role}`);
+    const hasRoleAccess = user.role === role || (role === "presenter" && user.role === "admin");
+    if (!hasRoleAccess) {
+      router.replace(user.role === "admin" || user.role === "presenter" ? `/dashboard/${user.role}` : "/");
     }
   }, [loading, user, role, router]);
 
-  if (loading || !user || user.role !== role) {
+  const hasRoleAccess = user?.role === role || (role === "presenter" && user?.role === "admin");
+  if (loading || !hasRoleAccess) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center text-stone-500">
         Checking access…

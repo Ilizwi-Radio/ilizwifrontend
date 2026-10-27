@@ -4,6 +4,8 @@ import { useState } from "react";
 import { login, register } from "@/lib/api";
 import Icon from "@/components/Icon";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,6 +20,8 @@ export default function AuthModal({
   onLoginSuccess,
   user
 }: AuthModalProps){
+  const router = useRouter();
+  const { refreshUser } = useAuth();
   const [authTab, setAuthTab] =
     useState("login");
 
@@ -84,17 +88,26 @@ export default function AuthModal({
         </div>
 
         <div className="mt-6 space-y-3">
-
-          <button
-            className="w-full border rounded-xl py-3"
-          >
-            My Profile
-          </button>
-
-          <button
-            className="w-full border rounded-xl py-3"
-          >
-            Settings
+          {user.role === "admin" && (
+            <>
+              <button onClick={() => { onClose(); router.push("/dashboard/admin"); }} className="w-full bg-green-900 text-white rounded-xl py-3 font-semibold">
+                Admin Dashboard
+              </button>
+              <button onClick={() => { onClose(); router.push("/dashboard/presenter"); }} className="w-full border rounded-xl py-3 font-semibold">
+                Presenter Studio
+              </button>
+            </>
+          )}
+          {user.role === "presenter" && (
+            <button onClick={() => { onClose(); router.push("/dashboard/presenter"); }} className="w-full bg-green-900 text-white rounded-xl py-3 font-semibold">
+              Presenter Studio
+            </button>
+          )}
+          {user.role === "registered" && (
+            <p className="text-center text-sm text-neutral-600 py-2">You’re signed in as a listener.</p>
+          )}
+          <button onClick={onClose} className="w-full border rounded-xl py-3">
+            Continue to site
           </button>
 
           <button
@@ -102,8 +115,10 @@ export default function AuthModal({
 
               localStorage.removeItem("token");
               localStorage.removeItem("user");
-
-              window.location.reload();
+              window.dispatchEvent(new Event("storage"));
+              refreshUser();
+              onClose();
+              router.replace("/");
 
             }}
             className="w-full bg-red-500 text-white rounded-xl py-3"
@@ -148,7 +163,7 @@ export default function AuthModal({
       }
 
 
-      console.log("LOGIN RESPONSE:", result);
+      // console.log("LOGIN RESPONSE:", result);
 
       localStorage.setItem(
         "token",
@@ -161,11 +176,18 @@ export default function AuthModal({
       );
 
       window.dispatchEvent(new Event("storage"));
+      refreshUser();
 
       if (onLoginSuccess) {
         onLoginSuccess(result.user);
-        console.log("USER SENT TO HOME:", result.user);
-    }
+        // console.log("USER SENT TO HOME:", result.user);
+      }
+
+      if (result.user.role === "admin" || result.user.role === "presenter") {
+        router.push(`/dashboard/${result.user.role}`);
+      } else {
+        router.push("/");
+      }
 
       setAuthSuccessMsg(
         "Login successful"
