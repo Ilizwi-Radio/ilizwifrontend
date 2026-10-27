@@ -66,15 +66,10 @@ export function AuthProvider({
   }, []);
 
   const logout = () => {
-    localStorage.removeItem(
-      "token"
-    );
-
-    localStorage.removeItem(
-      "user"
-    );
-
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
+    window.dispatchEvent(new Event("storage"));
   };
 
   return (

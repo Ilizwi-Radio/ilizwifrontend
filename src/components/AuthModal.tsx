@@ -21,7 +21,7 @@ export default function AuthModal({
   user
 }: AuthModalProps){
   const router = useRouter();
-  const { refreshUser } = useAuth();
+  const { refreshUser, logout } = useAuth();
   const [authTab, setAuthTab] =
     useState("login");
 
@@ -112,11 +112,7 @@ export default function AuthModal({
 
           <button
             onClick={() => {
-
-              localStorage.removeItem("token");
-              localStorage.removeItem("user");
-              window.dispatchEvent(new Event("storage"));
-              refreshUser();
+              logout();
               onClose();
               router.replace("/");
 
