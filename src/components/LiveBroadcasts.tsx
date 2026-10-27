@@ -52,9 +52,9 @@ export default function LiveBroadcasts() {
     title:
       show.title,
 
-    host:
-      show.presenter_name ||
-      "Presenter",
+    host: [show.display_name || show.presenter_name || "Presenter", show.cohost_display_name]
+      .filter(Boolean)
+      .join(" & "),
 
   lang:
   show.language_code === "zu"

@@ -8,6 +8,7 @@ iLIZWI Radio is a Next.js website and Express API for an online radio station. T
 - Single sign-in flow that routes admins and presenters to their dashboards; listener and registered-user accounts remain on the public site.
 - Admin tools for managing station content and presenters.
 - Presenter tools for profiles, shows, music, live broadcasting, and recording audio locally in the browser for download.
+- Remote co-hosting lets one assigned co-host join a show's live audio from another location; the primary presenter remains the only station-stream host.
 - Express API backed by PostgreSQL when configured.
 
 ## Requirements
@@ -78,6 +79,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `CORS_ORIGINS` | Backend | Comma-separated exact site origins allowed to call the API. |
 | `ICECAST_HOST`, `ICECAST_PORT`, `ICECAST_MOUNT`, `ICECAST_SOURCE_PASSWORD`, `ICECAST_BITRATE` | Backend | Icecast source connection used for presenter broadcasts. |
 | `ICECAST_PUBLIC_URL` | Backend | Public Icecast server URL used by the status endpoint. |
+| `TURN_URLS` | Backend, optional | TURN server URLs for remote co-host connections when direct peer connections are blocked. |
+| `TURN_SHARED_SECRET` | Backend, optional | Private coturn REST secret used to issue temporary TURN credentials. |
 | `GEMINI_API_KEY` | Backend | Optional key for AI presenter features. |
 
 ## Project layout
@@ -90,6 +93,7 @@ Backend/   Local checkout of the separate Express API repository (optional)
 ## Notes
 
 - Without `DATABASE_URL`, the backend falls back to a small in-memory mock. It is for previews only; data is temporary and the mock does not implement the complete production schema.
-- This repository currently has no database migration or schema bootstrap script. Use the PostgreSQL schema configured for your deployment before relying on persistent admin or presenter data.
+- This project does not include a full database schema bootstrap. Use the PostgreSQL schema configured for your deployment before relying on persistent admin or presenter data.
+- Apply `Backend/migrations/001_show_cohosts.sql` to the existing database before using co-host assignment. Configure a backend TURN service for presenter networks that cannot connect directly.
 - The presenter relay requires FFmpeg and a reachable Icecast source endpoint. The default backend relay uses the native Icecast source connection.
 - The public website player and current-song display use the station's Zeno stream and metadata feed. Zeno may not provide a title for every stream segment.

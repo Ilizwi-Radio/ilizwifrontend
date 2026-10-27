@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Show, Presenter } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
-import { getShows, getPresenters, getMyPresenterProfile, createShow, updateShow, deleteShow } from '@/lib/api';
+import { getShows, getPresenters, getMyPresenterProfile, createShow, updateShow, deleteShow, setShowCohost } from '@/lib/api';
 import {
   Calendar,
   Plus,
@@ -25,6 +25,7 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
 
   const [shows, setShows] = useState<Show[]>([]);
   const [presentersCount, setPresentersCount] = useState(0);
+  const [presenters, setPresenters] = useState<Presenter[]>([]);
   const [showsCount, setShowsCount] = useState(0);
 
   const [showForm, setShowForm] = useState(false);
@@ -54,6 +55,7 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
     getPresenters()
       .then((data) => {
         setPresentersCount(data.length);
+        setPresenters(data);
       })
       .catch(console.error);
   }, []);
@@ -122,7 +124,7 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
     }
   };
 
-  const displayShows = shows.filter((s) => s.presenter_id === presenterId);
+  const displayShows = shows.filter((s) => s.presenter_id === presenterId || s.cohost_presenter_id === presenterId);
 
   return (
     <div className="space-y-8">
@@ -282,7 +284,9 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
             </div>
           )}
 
-          {displayShows.map((s) => (
+          {displayShows.map((s) => {
+            const isPrimaryHost = s.presenter_id === presenterId;
+            return (
             <div
               key={s.id}
               className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:px-6 sm:py-4 hover:bg-stone-50/70 transition"
@@ -302,7 +306,8 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
                 </div>
 
                 <div className="text-stone-500 text-xs mt-1.5 flex items-center gap-3 flex-wrap">
-                  <span className="text-stone-600 font-medium">Host: {s.show_type}</span>
+                  <span className="text-stone-600 font-medium">Host: {s.display_name || 'Primary presenter'}</span>
+                  {s.cohost_display_name && <span>• Co-host: {s.cohost_display_name}</span>}
                   {s.language_code && <span>• {s.language_code.toUpperCase()}</span>}                
                 </div>
               </div>
@@ -315,22 +320,45 @@ export default function ShowsManagement({ onGoLiveWithShow }: ShowsManagementPro
                 >
                   <Radio className="w-3.5 h-3.5" /> Go Live in Studio
                 </button>
-                <button
-                  onClick={() => startEdit(s)}
-                  className="text-xs font-semibold text-stone-600 hover:text-stone-900 border border-stone-200 hover:bg-stone-100 px-3 py-2 rounded-xl transition"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(s.id)}
-                  className="text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-xl transition"
-                  title="Delete Show"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {isPrimaryHost && (
+                  <>
+                    <select
+                      aria-label={`Co-host for ${s.title}`}
+                      value={s.cohost_presenter_id || ''}
+                      onChange={async (event) => {
+                        try {
+                          await setShowCohost(s.id, event.target.value || null);
+                          await refreshShows();
+                        } catch (error) {
+                          alert(error instanceof Error ? error.message : 'Could not update co-host.');
+                        }
+                      }}
+                      className="max-w-40 rounded-xl border border-stone-200 bg-white px-2 py-2 text-xs"
+                    >
+                      <option value="">No co-host</option>
+                      {presenters.filter((presenter) => presenter.user_id && presenter.id !== presenterId).map((presenter) => (
+                        <option key={presenter.id} value={presenter.id}>{presenter.display_name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => startEdit(s)}
+                      className="text-xs font-semibold text-stone-600 hover:text-stone-900 border border-stone-200 hover:bg-stone-100 px-3 py-2 rounded-xl transition"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(s.id)}
+                      className="text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-xl transition"
+                      title="Delete Show"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

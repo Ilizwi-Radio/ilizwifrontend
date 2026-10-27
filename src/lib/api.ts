@@ -355,6 +355,36 @@ export async function updateShow(
   return response.json();
 }
 
+export async function setShowCohost(showId: string, presenterId: string | null) {
+  const response = await fetch(`${API_URL}/api/shows/${showId}/cohost`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    },
+    body: JSON.stringify({ presenterId }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to update the co-host.");
+  return data;
+}
+
+export async function getCohostConnectionToken(showId: string) {
+  const response = await fetch(`${API_URL}/api/shows/${showId}/cohost-token`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
+  });
+  const data = await response.json();
+  if (!response.ok || typeof data.token !== "string") {
+    throw new Error(data.error || "Could not authorize the co-host connection.");
+  }
+  return data as {
+    token: string;
+    participantRole: "host" | "cohost";
+    expiresIn: number;
+    iceServers: RTCIceServer[];
+  };
+}
+
 export async function deleteShow(
   id: string
 ) {
@@ -854,8 +884,8 @@ export async function getBroadcastStatus() {
   return JSON.parse(text);
 }
 
-export async function getBroadcastRelayToken(): Promise<string> {
-  const response = await fetch(`${API_URL}/api/broadcast/relay-token`, {
+export async function getBroadcastRelayToken(showId: string): Promise<string> {
+  const response = await fetch(`${API_URL}/api/broadcast/relay-token?showId=${encodeURIComponent(showId)}`, {
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
     },
