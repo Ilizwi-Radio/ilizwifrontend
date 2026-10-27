@@ -14,24 +14,12 @@ import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
 import { getSiteSettings } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 export default function Home() {
   const [sections, setSections] = useState<Record<string, boolean>>({});
   const [isProfileOpen,setIsProfileOpen] = useState(false);
-  const [user,setUser] = useState<any>(null);
+  const { user } = useAuth();
   // console.log("CURRENT USER:", user);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-
-    if (savedUser && savedUser !== "undefined") {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        console.error("Invalid user data in localStorage");
-        localStorage.removeItem("user");
-      }
-    }
-  }, []);
 
   useEffect(() => {
   getSiteSettings()
@@ -61,11 +49,7 @@ useEffect(() => {
       <AuthModal 
       isOpen={isProfileOpen}
       user={user}
-       onClose={() =>  setIsProfileOpen(false) }  
-       onLoginSuccess={(user) => {
-        console.log("Logged in:", user);
-        setUser(user);
-         }}/>
+       onClose={() =>  setIsProfileOpen(false) } />
       <Hero />
       {sections.liveSessions !== false && (<LiveBroadcasts />)}
       {sections.music !== false && ( <MusicLibrary />)}
