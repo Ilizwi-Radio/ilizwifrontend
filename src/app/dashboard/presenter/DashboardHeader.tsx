@@ -29,6 +29,11 @@ export default function DashboardHeader({
             <Globe className="w-4 h-4" />
             View Website
           </Link>
+          {user?.role === 'admin' && (
+            <Link href="/dashboard/admin" className="hidden sm:flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-900 transition">
+              Admin Dashboard
+            </Link>
+          )}
           {onOpenMobileMenu && (
             <button
               onClick={onOpenMobileMenu}

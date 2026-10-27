@@ -26,6 +26,8 @@ import {
   Layers,
   Check,
   Disc3,
+  Circle,
+  Download,
   MessageSquare,
   Send,
   Zap,
@@ -36,7 +38,7 @@ import {
 import confetti from 'canvas-confetti';
 
 const STREAM_URL = `${process.env.NEXT_PUBLIC_STREAM_URL}/live`;
-console.log("STREAM_URL =", STREAM_URL);
+// console.log("STREAM_URL =", STREAM_URL);
 
 // NOTE: NEXT_PUBLIC_* env vars ship in the client bundle, which means
 // NEXT_PUBLIC_RELAY_TOKEN is visible to anyone who opens dev tools.
@@ -51,6 +53,7 @@ type StreamStatus = 'idle' | 'connecting' | 'live' | 'error' | 'stopped';
 interface PresenterStudioProps {
   presenterId: string;
   presenterName: string;
+  initialShowId?: string;
   onNavigateToShows?: () => void;
   onNavigateToMusic?: () => void;
 }
@@ -58,6 +61,7 @@ interface PresenterStudioProps {
 export default function PresenterStudio({
   presenterId,
   presenterName,
+  initialShowId,
   onNavigateToShows,
   onNavigateToMusic,
 }: PresenterStudioProps) {
@@ -71,6 +75,11 @@ export default function PresenterStudio({
   const [voicePeak, setVoicePeak] = useState(0);
   const [isSimulated, setIsSimulated] = useState(false);
   const [isGoingLive, setIsGoingLive] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
+  const localRecorderRef = useRef<MediaRecorder | null>(null);
+  const localRecordingChunksRef = useRef<Blob[]>([]);
 
   // Streaming (relay -> Icecast) connection status, separate from isBroadcasting
   // so we can tell the presenter when audio has actually stopped reaching
@@ -80,6 +89,10 @@ export default function PresenterStudio({
   // Shows & Selection
   const [shows, setShows] = useState<Show[]>([]);
   const [selectedShowId, setSelectedShowId] = useState<string>('');
+
+  useEffect(() => {
+    if (initialShowId) setSelectedShowId(initialShowId);
+  }, [initialShowId]);
 
   // Live Timer & Listener Counter
   const [broadcastSeconds, setBroadcastSeconds] = useState(0);
@@ -142,6 +155,70 @@ export default function PresenterStudio({
     }
     return () => clearInterval(timer);
   }, [isBroadcasting]);
+
+  useEffect(() => {
+    if (!isRecording) return;
+    const timer = window.setInterval(() => setRecordingSeconds((seconds) => seconds + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [isRecording]);
+
+  const startLocalRecording = () => {
+    setRecordingError(null);
+    try {
+      if (typeof MediaRecorder === 'undefined') {
+        throw new Error('Local recording is not supported by this browser.');
+      }
+      const stream = audioEngine.getBroadcastStream();
+      const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+        .find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000 })
+        : new MediaRecorder(stream);
+
+      localRecordingChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) localRecordingChunksRef.current.push(event.data);
+      };
+      recorder.onerror = () => {
+        setRecordingError('The local recording stopped because the browser reported an audio error.');
+        setIsRecording(false);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(localRecordingChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        localRecordingChunksRef.current = [];
+        localRecorderRef.current = null;
+        setIsRecording(false);
+        setRecordingSeconds(0);
+        if (!blob.size) {
+          setRecordingError('No audio was captured. Start a new recording and try again.');
+          return;
+        }
+
+        const extension = recorder.mimeType.includes('mp4') ? 'm4a' : 'webm';
+        const date = new Date().toISOString().replace(/[:.]/g, '-');
+        const url = URL.createObjectURL(blob);
+        const download = document.createElement('a');
+        download.href = url;
+        download.download = `ilizwi-radio-${date}.${extension}`;
+        document.body.appendChild(download);
+        download.click();
+        download.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      };
+
+      recorder.start(1000);
+      localRecorderRef.current = recorder;
+      setRecordingSeconds(0);
+      setIsRecording(true);
+    } catch (error) {
+      setRecordingError(error instanceof Error ? error.message : 'Could not start a local recording.');
+    }
+  };
+
+  const stopLocalRecording = () => {
+    const recorder = localRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') recorder.stop();
+  };
 
   useEffect(() => {
   const loadIcecastStatus = async () => {
@@ -243,8 +320,8 @@ useEffect(() => {
       }
 
       console.log("STARTING BROADCAST");
-      console.log("Selected Show:", selectedShowId);
-      console.log("Stream URL:", STREAM_URL);
+      // console.log("Selected Show:", selectedShowId);
+      // console.log("Stream URL:", STREAM_URL);
 
       let broadcast;
       try {
@@ -284,6 +361,7 @@ useEffect(() => {
     }
   } else {
     try {
+      stopLocalRecording();
       if (broadcastId) {
 
           await updateListenerCount(
@@ -691,7 +769,30 @@ useEffect(() => {
                 {isMuted ? 'Unmute Mic' : 'Mute Mic'}
               </button>
             )}
+
+            {isBroadcasting && (
+              <button
+                onClick={isRecording ? stopLocalRecording : startLocalRecording}
+                className={`px-4 py-2.5 rounded-xl font-semibold text-sm border transition flex items-center gap-2 ${
+                  isRecording
+                    ? 'bg-red-950 text-red-200 border-red-700 hover:bg-red-900'
+                    : 'bg-stone-800 hover:bg-stone-700 text-stone-200 border-stone-700'
+                }`}
+                aria-pressed={isRecording}
+              >
+                {isRecording ? <><Square className="w-4 h-4" /><Download className="w-4 h-4" />Stop &amp; Download {formatTime(recordingSeconds)}</> : <><Circle className="w-4 h-4 text-red-400" />Record Locally</>}
+              </button>
+            )}
           </div>
+
+          {isRecording && (
+            <p className="text-center text-[11px] text-stone-400 font-mono">
+              Recording the full broadcast mix. The audio file downloads to this device when stopped.
+            </p>
+          )}
+          {recordingError && (
+            <p role="alert" className="text-center text-xs text-red-300">{recordingError}</p>
+          )}
 
           {/* Mic Gain Slider */}
           <div className="bg-stone-950/70 backdrop-blur border border-stone-800 rounded-xl p-3.5 flex items-center justify-between gap-4 text-xs font-mono">

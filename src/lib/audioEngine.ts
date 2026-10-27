@@ -113,6 +113,13 @@ class AudioEngine {
     return this.ctx;
   }
 
+  /** Returns the full mixed broadcast bus used by the live stream. */
+  public getBroadcastStream(): MediaStream {
+    if (!this.streamDestination) this.getContext();
+    if (!this.streamDestination) throw new Error('Broadcast audio is not available');
+    return this.streamDestination.stream;
+  }
+
   /**
    * Start capturing real microphone
    */

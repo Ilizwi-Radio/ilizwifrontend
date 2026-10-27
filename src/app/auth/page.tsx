@@ -4,8 +4,12 @@ import { useState } from "react";
 import { login, register } from "@/lib/api";
 import Icon from "@/components/Icon";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 
 export default function AuthPage() {
+  const router = useRouter();
+  const { refreshUser } = useAuth();
   const [authTab, setAuthTab] = useState("login");
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -46,14 +50,22 @@ export default function AuthPage() {
         JSON.stringify(result.user)
       );
 
+      window.dispatchEvent(new Event("storage"));
+      refreshUser();
+
       setAuthSuccessMsg(
         "Login successful"
       );
 
-    } catch {
+      const destination = result.user.role === "admin" || result.user.role === "presenter"
+        ? `/dashboard/${result.user.role}`
+        : "/";
+      window.setTimeout(() => router.replace(destination), 350);
+
+    } catch (error) {
 
       setAuthError(
-        "Login failed"
+        error instanceof Error ? error.message : "Login failed"
       );
 
     } finally {

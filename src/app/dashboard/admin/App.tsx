@@ -44,22 +44,22 @@ export default function App() {
 
   useEffect(() => {
     getPresenters().then(setPresenters).catch(console.error);
-    getEvents().then(setEvents).catch(console.error);
-    getShows().then(setShows).catch(console.error);
-    getOpportunities().then(setOpportunities).catch(console.error);
-    getSongs().then(setSongs).catch(console.error);
-    getVideos().then(setVideos).catch(console.error);
-    getCourses().then(setCourses).catch(console.error);
+    getEvents(true).then(setEvents).catch(console.error);
+    getShows(true).then(setShows).catch(console.error);
+    getOpportunities(true).then(setOpportunities).catch(console.error);
+    getSongs(true).then(setSongs).catch(console.error);
+    getVideos(true).then(setVideos).catch(console.error);
+    getCourses(true).then(setCourses).catch(console.error);
     getSiteSettings().then((s) => setSectionSettings(s?.homepage_sections ?? {})).catch(console.error);
   }, []);
 
   const refreshPresenters = async () => { setPresenters(await getPresenters()); };
-  const refreshEvents = async () => { setEvents(await getEvents()); };
-  const refreshShows = async () => { setShows(await getShows()); };
-  const refreshOpportunities = async () => { setOpportunities(await getOpportunities()); };
-  const refreshSongs = async () => { setSongs(await getSongs()); };
-  const refreshVideos = async () => { setVideos(await getVideos()); };
-  const refreshCourses = async () => { setCourses(await getCourses()); };
+  const refreshEvents = async () => { setEvents(await getEvents(true)); };
+  const refreshShows = async () => { setShows(await getShows(true)); };
+  const refreshOpportunities = async () => { setOpportunities(await getOpportunities(true)); };
+  const refreshSongs = async () => { setSongs(await getSongs(true)); };
+  const refreshVideos = async () => { setVideos(await getVideos(true)); };
+  const refreshCourses = async () => { setCourses(await getCourses(true)); };
 
   const toggleSection = async (key: string, visible: boolean) => {
     const next = { ...sectionSettings, [key]: visible };
