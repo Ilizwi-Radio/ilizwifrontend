@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Icon from "./Icon";
 import { useAuth } from "@/lib/auth";
 
 export default function DashboardHeader({ title, subtitle }: { title: string; subtitle: string }) {
   const { user, logout } = useAuth();
-  const router = useRouter();
 
   return (
     <header className="bg-nav-gradient text-white">
@@ -34,7 +32,7 @@ export default function DashboardHeader({ title, subtitle }: { title: string; su
           <button
             onClick={() => {
               logout();
-              router.push("/");
+              window.location.replace("/");
             }}
             className="text-sm bg-orange-500 hover:bg-orange-600 rounded-full px-4 py-2 font-semibold"
           >

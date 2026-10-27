@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from '@/lib/auth';
 import { Menu, Radio, Mic, Headphones, Globe } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 interface DashboardHeaderProps {
   title: string;
@@ -18,7 +17,6 @@ export default function DashboardHeader({
   isBroadcasting = false,
 }: DashboardHeaderProps) {
   const { user, logout } = useAuth();
-  const router = useRouter();
 
   return (
     <header className="bg-white border-b border-stone-200 sticky top-0 z-30 px-6 py-4">
@@ -40,7 +38,7 @@ export default function DashboardHeader({
             type="button"
             onClick={() => {
               logout();
-              router.replace('/');
+              window.location.replace('/');
             }}
             className="text-sm text-stone-600 hover:text-red-700 transition"
           >
