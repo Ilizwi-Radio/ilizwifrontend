@@ -177,8 +177,8 @@ export default function AdminCollectionEditor<T extends Row>({
       )}
 
       <div className="border border-stone-200 rounded-xl overflow-hidden divide-y divide-stone-100">
-        {items.length === 0 && <div className="p-5 text-stone-400 text-sm">No items yet.</div>}
-        {items.map((item) => (
+        {(!Array.isArray(items) || items.length === 0) && <div className="p-5 text-stone-400 text-sm">No items yet.</div>}
+        {(Array.isArray(items) ? items : []).map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-stone-50">
             <span className="text-sm text-stone-700 truncate">{label(item)}</span>
             <div className="flex items-center gap-3 shrink-0">

@@ -1,6 +1,9 @@
 export interface Show {
   id: string;
   presenter_id: string;
+  display_name?: string;
+  cohost_presenter_id?: string | null;
+  cohost_display_name?: string | null;
   title: string;
   description?: string;
 
@@ -18,7 +21,8 @@ export interface Show {
 
 export interface Presenter {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  display_name?: string;
   name: string;
   full_name?: string;
   role: string;

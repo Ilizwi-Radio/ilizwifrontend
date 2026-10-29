@@ -16,7 +16,7 @@ export default function DashboardHeader({
   onOpenMobileMenu,
   isBroadcasting = false,
 }: DashboardHeaderProps) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <header className="bg-white border-b border-stone-200 sticky top-0 z-30 px-6 py-4">
@@ -34,6 +34,16 @@ export default function DashboardHeader({
               Admin Dashboard
             </Link>
           )}
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              window.location.replace('/');
+            }}
+            className="text-sm text-stone-600 hover:text-red-700 transition"
+          >
+            Log out
+          </button>
           {onOpenMobileMenu && (
             <button
               onClick={onOpenMobileMenu}

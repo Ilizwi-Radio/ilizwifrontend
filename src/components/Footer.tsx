@@ -29,7 +29,7 @@ export default function Footer() {
           </div>
           <div className="mt-4 space-y-1.5 text-white/60 text-sm">
             <div className="flex items-center gap-2">
-              <Icon name="mail" /> hello@ilizwiradio.africa
+              <Icon name="mail" /> Ilizwiradio@gmail.com
             </div>
             <div className="flex items-center gap-2">
               <Icon name="pin" /> Pan-African • Broadcasting Worldwide

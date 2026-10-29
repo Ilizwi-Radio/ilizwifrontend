@@ -31,6 +31,7 @@ class AudioEngine {
   // Broadcast bus (mic + music + sfx) — this is what actually gets streamed to Icecast
   private broadcastGain: GainNode | null = null;
   private streamDestination: MediaStreamAudioDestinationNode | null = null;
+  private remoteMicrophoneSources = new Map<MediaStream, MediaStreamAudioSourceNode>();
 
   // Streaming pipeline
   private mediaRecorder: MediaRecorder | null = null;
@@ -120,14 +121,35 @@ class AudioEngine {
     return this.streamDestination.stream;
   }
 
+  public getMicrophoneStream(): MediaStream | null {
+    return this.micStream;
+  }
+
+  public addRemoteMicrophone(stream: MediaStream): () => void {
+    const ctx = this.getContext();
+    if (!this.broadcastGain || !this.masterGain) {
+      throw new Error("Audio engine is not ready");
+    }
+    const source = ctx.createMediaStreamSource(stream);
+    source.connect(this.broadcastGain);
+    source.connect(this.masterGain);
+    this.remoteMicrophoneSources.set(stream, source);
+    return () => {
+      source.disconnect();
+      this.remoteMicrophoneSources.delete(stream);
+    };
+  }
+
   /**
    * Start capturing real microphone
    */
   public async startMicrophone(): Promise<{ success: boolean; simulated: boolean; error?: string }> {
     try {
       const ctx = this.getContext();
-      if (this.micStream) {
-        this.stopMicrophone();
+      if (this.micStream?.active) {
+        this.isMicActive = true;
+        this.isSimulated = false;
+        return { success: true, simulated: false };
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -325,8 +347,9 @@ class AudioEngine {
    * incoming WebM/Opus chunks into ffmpeg, which pushes them into Icecast.
    *
    * @param relayWsUrl e.g. "wss://your-relay-domain/broadcast"
+   * @param relayToken short-lived token issued by the authenticated backend
    */
-  public startStreaming(relayWsUrl: string): Promise<void> {
+  public startStreaming(relayWsUrl: string, relayToken: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.isStreaming) {
         resolve();
@@ -342,7 +365,7 @@ class AudioEngine {
 
       this.emitStreamingStatus('connecting');
 
-      const socket = new WebSocket(relayWsUrl);
+      const socket = new WebSocket(relayWsUrl, ['ilizwi-relay', relayToken]);
       this.socket = socket;
 
       socket.onopen = () => {

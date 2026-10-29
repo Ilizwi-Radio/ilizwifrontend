@@ -25,7 +25,10 @@ function PresenterAppContent() {
   const [requestedShowId, setRequestedShowId] = useState('');
 
   useEffect(() => {
-    getShows().then((shows) => setShowsCount(shows.length));
+    getShows().then((shows) => setShowsCount(shows.length)).catch((error) => {
+      console.error("Failed to load presenter show count:", error);
+      setShowsCount(0);
+    });
   }, []);
 
   const handleGoLiveWithShow = (showId: string) => {

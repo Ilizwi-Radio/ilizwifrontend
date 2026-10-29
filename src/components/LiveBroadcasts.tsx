@@ -10,7 +10,14 @@ export default function LiveBroadcasts() {
 
   const loadShows = async () => {
 
-    const data = await getShows();
+    let data: any[];
+    try {
+      data = await getShows();
+    } catch (error) {
+      console.error("Failed to load live broadcasts:", error);
+      setSchedule([]);
+      return;
+    }
 
     const mappedShows = data.map((show: any) => {
 
@@ -52,9 +59,9 @@ export default function LiveBroadcasts() {
     title:
       show.title,
 
-    host:
-      show.presenter_name ||
-      "Presenter",
+    host: [show.display_name || show.presenter_name || "Presenter", show.cohost_display_name]
+      .filter(Boolean)
+      .join(" & "),
 
   lang:
   show.language_code === "zu"

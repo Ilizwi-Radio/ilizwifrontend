@@ -2,9 +2,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Show, MusicTrack, SoundEffect } from '@/lib/types';
 import { audioEngine } from '@/lib/audioEngine';
-import { getShows, getMusicTracks, SOUND_EFFECTS, addMusicTrack } from '@/lib/api';
+import { getShows, getMusicTracks, SOUND_EFFECTS, addMusicTrack, getBroadcastRelayToken, getMyPresenterProfile } from '@/lib/api';
 import { startBroadcast, stopBroadcast, getBroadcastStatus, updateListenerCount, playBroadcastContent,clearBroadcastContent, getIcecastStatus,} from '@/lib/api';
 import VoiceVisualizer from './VoiceVisualizer';
+import CohostLink from './CohostLink';
+import { useAuth } from '@/lib/auth';
 import {
   Mic,
   MicOff,
@@ -40,13 +42,7 @@ import confetti from 'canvas-confetti';
 const STREAM_URL = `${process.env.NEXT_PUBLIC_STREAM_URL}/live`;
 // console.log("STREAM_URL =", STREAM_URL);
 
-// NOTE: NEXT_PUBLIC_* env vars ship in the client bundle, which means
-// NEXT_PUBLIC_RELAY_TOKEN is visible to anyone who opens dev tools.
-// Fine for early testing; before real use, swap this for a short-lived
-// token fetched from an authenticated backend endpoint
-// (e.g. GET /api/broadcast/relay-token) instead of a static shared secret.
 const RELAY_WS_URL = process.env.NEXT_PUBLIC_RELAY_URL || '';
-const RELAY_TOKEN = process.env.NEXT_PUBLIC_RELAY_TOKEN || '';
 
 type StreamStatus = 'idle' | 'connecting' | 'live' | 'error' | 'stopped';
 
@@ -65,8 +61,11 @@ export default function PresenterStudio({
   onNavigateToShows,
   onNavigateToMusic,
 }: PresenterStudioProps) {
+  const { user } = useAuth();
+  const [myPresenterProfileId, setMyPresenterProfileId] = useState<string | null>(null);
   // Broadcast State
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [cohostRoomJoined, setCohostRoomJoined] = useState(false);
   const [broadcastId, setBroadcastId] =  useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [micVolume, setMicVolume] = useState(1.0);
@@ -123,14 +122,18 @@ export default function PresenterStudio({
   const [chatInput, setChatInput] = useState('');
   useEffect(() => {
       getShows().then((allShows) => {
-        console.log("SHOWS:", allShows);
         setShows(allShows);
+      }).catch((error) => {
+        console.error("Failed to load presenter shows:", error);
+        setShows([]);
       });
 
       getMusicTracks().then((allTracks) => {
-        console.log("TRACKS:", allTracks);
         setTracks(allTracks);
       });
+      getMyPresenterProfile()
+        .then((profile) => setMyPresenterProfileId(profile.id))
+        .catch(() => setMyPresenterProfileId(null));
     }, []);
 
   const [icecastStatus, setIcecastStatus] =  useState({ online: false,  listeners: 0,  bitrate: 0, listenerPeak: 0,});
@@ -285,8 +288,15 @@ useEffect(() => {
   // Toggle Live Broadcast
   const handleToggleBroadcast = async () => {
   if (!isBroadcasting) {
+    if (
+      myPresenterProfileId &&
+      shows.find((show) => show.id === selectedShowId)?.cohost_presenter_id === myPresenterProfileId
+    ) {
+      alert("Only the primary host can start the station broadcast. Join the co-host room to contribute your microphone.");
+      return;
+    }
     if (!selectedShowId) {
-      console.log({ RELAY_WS_URL,  RELAY_TOKEN, });
+      console.log("Select a show before going live.");
         alert("Please select a show before going live.");
         return;
       }
@@ -313,9 +323,10 @@ useEffect(() => {
       }
 
       try {
-        await audioEngine.startStreaming(`${RELAY_WS_URL}?token=${RELAY_TOKEN}`);
+        const relayToken = await getBroadcastRelayToken(selectedShowId);
+        await audioEngine.startStreaming(RELAY_WS_URL, relayToken);
       } catch (streamErr) {
-        audioEngine.stopMicrophone();
+        if (!cohostRoomJoined) audioEngine.stopMicrophone();
         throw streamErr;
       }
 
@@ -331,7 +342,7 @@ useEffect(() => {
         // own backend failed — don't leave the presenter "live" with no
         // corresponding broadcast record. Tear everything back down.
         audioEngine.stopStreaming();
-        audioEngine.stopMicrophone();
+        if (!cohostRoomJoined) audioEngine.stopMicrophone();
         throw apiErr;
       }
 
@@ -374,7 +385,7 @@ useEffect(() => {
           );
         }
 
-      audioEngine.stopMicrophone();
+      if (!cohostRoomJoined) audioEngine.stopMicrophone();
       audioEngine.stopMusic();
       audioEngine.stopStreaming();
 
@@ -388,7 +399,7 @@ useEffect(() => {
       console.error("Failed to stop broadcast", error);
       // Even if the API calls above failed, make sure we don't leave the
       // mic/stream running locally — the presenter clicked "stop."
-      audioEngine.stopMicrophone();
+      if (!cohostRoomJoined) audioEngine.stopMicrophone();
       audioEngine.stopMusic();
       audioEngine.stopStreaming();
       setBroadcastId(null);
@@ -536,7 +547,16 @@ useEffect(() => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const activeShow = shows.find((s) => s.id === selectedShowId) || shows[0];
+  const presenterShows = shows.filter((show) =>
+    myPresenterProfileId
+      ? show.presenter_id === myPresenterProfileId || show.cohost_presenter_id === myPresenterProfileId
+      : user?.role === 'admin'
+  );
+  const selectedShow = presenterShows.find((show) => show.id === selectedShowId);
+  const selectedShowIsCohost = Boolean(
+    myPresenterProfileId && selectedShow?.cohost_presenter_id === myPresenterProfileId
+  );
+  const activeShow = selectedShow || presenterShows[0];
 
   // Small badge describing relay/Icecast connection health, distinct from
   // isBroadcasting (which only reflects local studio state).
@@ -599,7 +619,7 @@ useEffect(() => {
               onChange={(e) => setSelectedShowId(e.target.value)}
               className="bg-stone-950 border border-stone-800 text-stone-200 text-sm font-semibold rounded-xl px-3 py-1.5 outline-none focus:border-emerald-600"
             >
-              {shows.map((s) => (
+              {presenterShows.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.title} ({s.show_type})
                 </option>
@@ -638,6 +658,10 @@ useEffect(() => {
           </button>
         </div>
       </div>
+
+      {selectedShow && myPresenterProfileId && (selectedShow.presenter_id === myPresenterProfileId || selectedShow.cohost_presenter_id === myPresenterProfileId) && (
+        <CohostLink showId={selectedShow.id} showTitle={selectedShow.title} onConnectionChange={setCohostRoomJoined} />
+      )}
 
       {/* CENTERSTAGE: HUGE MICROPHONE WITH SOUND WAVES */}
       <div className="relative bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 border border-stone-800 rounded-3xl p-8 sm:p-12 shadow-2xl overflow-hidden text-center">
@@ -744,7 +768,7 @@ useEffect(() => {
             {/* Go Live / Stop broadcast button */}
             <button
               onClick={handleToggleBroadcast}
-              disabled={isGoingLive}
+              disabled={isGoingLive || (selectedShowIsCohost && !isBroadcasting)}
               className={`px-6 py-2.5 rounded-xl font-bold text-sm transition shadow-lg flex items-center gap-2 disabled:opacity-60 disabled:cursor-wait ${
                 isBroadcasting
                   ? 'bg-red-600 hover:bg-red-700 text-white'
@@ -752,7 +776,7 @@ useEffect(() => {
               }`}
             >
               <Radio className="w-4 h-4" />
-              {isGoingLive ? 'Connecting…' : isBroadcasting ? 'End Broadcast' : 'Start Broadcasting'}
+              {isGoingLive ? 'Connecting…' : isBroadcasting ? 'End Broadcast' : selectedShowIsCohost ? 'Co-host mode' : 'Start Broadcasting'}
             </button>
 
             {/* Mute toggle button */}
