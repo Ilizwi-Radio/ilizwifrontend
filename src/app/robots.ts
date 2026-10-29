@@ -5,6 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: ["/auth", "/dashboard/"],
     },
     sitemap: "https://www.ilizwiradio.co.za/sitemap.xml",
   };

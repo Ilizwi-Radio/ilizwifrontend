@@ -1,14 +1,35 @@
-"use client";
-
 import Link from "next/link";
 import Icon from "@/components/Icon";
-import { useDataStore } from "@/lib/store";
+import { getPublicHomepageContent } from "@/lib/public-content";
 
-export default function ActivitiesPage() {
-  const store = useDataStore();
+export const revalidate = 300;
+
+function formatShowTime(value?: string | null) {
+  if (!value) return "Time to be announced";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Time to be announced";
+  return new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "Africa/Johannesburg",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function formatEventDate(value?: string | null) {
+  if (!value) return "Date to be announced";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date to be announced";
+  return new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "Africa/Johannesburg",
+    dateStyle: "long",
+  }).format(date);
+}
+
+export default async function ActivitiesPage() {
+  const { shows, events } = await getPublicHomepageContent();
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <main className="min-h-screen bg-stone-50">
       <div className="bg-nav-gradient text-white">
         <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
@@ -31,60 +52,54 @@ export default function ActivitiesPage() {
         </div>
         <h1 className="display text-4xl text-green-900 mb-3">What&apos;s Happening</h1>
         <p className="text-stone-500 max-w-lg mb-10">
-          Every live session and event below is managed by the iLizwi Radio team from the Admin Dashboard — this page
-          always reflects the latest schedule.
+          Explore upcoming iLizwi Radio shows, live sessions, and events celebrating African music and culture.
         </p>
 
-        <h2 className="font-bold text-lg text-green-900 mb-4">Live Sessions</h2>
-        <div className="grid sm:grid-cols-2 gap-4 mb-12">
-          {store.schedule.map((s, index) => (
-            <div key={`${s.title}-${index}`} className="bg-white border border-stone-200 rounded-xl p-4 flex items-center gap-4">
-              <div
-                className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center"
-                style={{ background: `linear-gradient(135deg,${s.imgFrom},${s.imgTo})` }}
-              >
-                <Icon name={s.icon as "mic" | "video" | "briefcase"} className="w-5 h-5 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  {s.tag === "LIVE" && (
-                    <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-                    </span>
-                  )}
-                  <span className="font-semibold text-green-900 truncate">{s.title}</span>
-                </div>
-                <div className="text-stone-500 text-xs mt-0.5 truncate">
-                  {s.host} {s.tag !== "LIVE" && `• ${s.tag}`} {s.lang && `• ${s.lang}`}
-                </div>
-              </div>
-            </div>
-          ))}
-          {store.schedule.length === 0 && <p className="text-stone-400 text-sm">No live sessions scheduled right now.</p>}
-        </div>
+        <section aria-labelledby="activity-shows-heading" className="mb-12">
+          <h2 id="activity-shows-heading" className="font-bold text-lg text-green-900 mb-4">Live Radio Shows</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {shows.map((show) => {
+              const isLive = show.is_live ?? show.status === "live";
+              const host = [show.display_name || show.presenter_name, show.cohost_display_name]
+                .filter(Boolean)
+                .join(" & ");
+              return (
+                <article key={show.id} className="bg-white border border-stone-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    {isLive && <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">LIVE</span>}
+                    <h3 className="font-semibold text-green-900">{show.title}</h3>
+                  </div>
+                  {show.description && <p className="text-stone-600 text-sm mb-2">{show.description}</p>}
+                  <p className="text-stone-500 text-sm">
+                    {host || "iLizwi Radio"} · {formatShowTime(show.scheduled_start)}
+                    {show.language_code ? ` · ${show.language_code}` : ""}
+                  </p>
+                </article>
+              );
+            })}
+            {shows.length === 0 && <p className="text-stone-500 text-sm">No live sessions are scheduled right now.</p>}
+          </div>
+        </section>
 
-        <h2 className="font-bold text-lg text-green-900 mb-4">Events &amp; Festivals</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {store.events.map((e, index) => (
-            <div key={index} className="bg-white border border-stone-200 rounded-xl p-4 flex items-center gap-4">
-              <div
-                className="w-14 h-14 rounded-lg shrink-0 flex flex-col items-center justify-center text-white"
-                style={{ background: `linear-gradient(135deg,${e.from},${e.to})` }}
-              >
-                <span className="font-extrabold text-sm leading-none">{e.date}</span>
-                <span className="text-[9px] font-semibold">{e.mon}</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="font-semibold text-green-900 block truncate">{e.title}</span>
-                <span className="text-stone-500 text-xs flex items-center gap-1.5 mt-0.5">
-                  <Icon name="pin" className="w-3.5 h-3.5 shrink-0" /> {e.loc}
-                </span>
-              </div>
-            </div>
-          ))}
-          {store.events.length === 0 && <p className="text-stone-400 text-sm">No events scheduled right now.</p>}
-        </div>
+        <section aria-labelledby="activity-events-heading">
+          <h2 id="activity-events-heading" className="font-bold text-lg text-green-900 mb-4">Events &amp; Festivals</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {events.map((event) => (
+              <article key={event.id} className="bg-white border border-stone-200 rounded-xl p-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+                  <h3 className="font-semibold text-green-900">{event.title}</h3>
+                  {event.category && <span className="text-orange-600 text-xs font-bold">{event.category}</span>}
+                </div>
+                {event.description && <p className="text-stone-600 text-sm mb-2">{event.description}</p>}
+                <p className="text-stone-500 text-sm">
+                  {formatEventDate(event.start_at)}{event.location ? ` · ${event.location}` : ""}
+                </p>
+              </article>
+            ))}
+            {events.length === 0 && <p className="text-stone-500 text-sm">No events are scheduled right now.</p>}
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
