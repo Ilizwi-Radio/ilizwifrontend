@@ -40,8 +40,8 @@ export const metadata: Metadata = {
     images: ["/og-image.jpg"],
   },
   icons: {
-    icon: "/logo-192.jpg",
-    apple: "/logo-192.jpg",
+    icon: [{ url: "/icon.png", sizes: "192x192", type: "image/png" }],
+    apple: "/icon.png",
   },
   robots: {
     index: true,
@@ -51,11 +51,17 @@ export const metadata: Metadata = {
 
 const stationStructuredData = {
   "@context": "https://schema.org",
-  "@type": "RadioStation",
+  "@type": ["Organization", "RadioStation"],
+  "@id": "https://www.ilizwiradio.co.za/#organization",
   name: "iLizwi Radio",
   alternateName: "iLizwi Radio — Where Africa Speaks",
   url: "https://www.ilizwiradio.co.za/",
-  logo: "https://www.ilizwiradio.co.za/logo-192.jpg",
+  logo: {
+    "@type": "ImageObject",
+    url: "https://www.ilizwiradio.co.za/logo-192.jpg",
+    width: 1024,
+    height: 1024,
+  },
   image: "https://www.ilizwiradio.co.za/og-image.jpg",
   description:
     "An online South African radio station celebrating African music, languages, culture, and community.",
