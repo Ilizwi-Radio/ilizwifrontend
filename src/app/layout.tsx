@@ -6,68 +6,60 @@ import { DataStoreProvider } from "@/lib/store";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.ilizwiradio.co.za"),
+
   title: {
-    default: "iLizwi Radio | African Music, Culture & Live Radio",
-    template: "%s | iLizwi Radio",
+    default: "iLIZWI Radio",
+    template: "%s | iLIZWI Radio",
   },
+
   description:
-    "Listen live to iLizwi Radio, an online South African radio station celebrating African music, languages, culture, and community.",
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_ZA",
-    url: "/",
-    siteName: "iLizwi Radio",
-    title: "iLizwi Radio | African Music, Culture & Live Radio",
-    description:
-      "Listen live to iLizwi Radio, celebrating African music, languages, culture, and community.",
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1376,
-        height: 768,
-        alt: "iLizwi Radio — Where Africa Speaks",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "iLizwi Radio | African Music, Culture & Live Radio",
-    description:
-      "Listen live to iLizwi Radio, celebrating African music, languages, culture, and community.",
-    images: ["/og-image.jpg"],
-  },
-  icons: {
-    icon: [{ url: "/icon.png", sizes: "192x192", type: "image/png" }],
-    apple: "/icon.png",
-  },
+    "Listen live to iLIZWI Radio. Discover African music, culture, storytelling, language learning, and AI-powered broadcasting from anywhere in the world.",
+
+  keywords: [
+    "iLIZWI Radio",
+    "African Radio",
+    "Online Radio",
+    "South Africa Radio",
+    "Zulu Radio",
+    "Live Radio Streaming",
+    "African Music",
+    "African Culture",
+    "Language Learning",
+  ],
+
   robots: {
     index: true,
     follow: true,
   },
-};
 
-const stationStructuredData = {
-  "@context": "https://schema.org",
-  "@type": ["Organization", "RadioStation"],
-  "@id": "https://www.ilizwiradio.co.za/#organization",
-  name: "iLizwi Radio",
-  alternateName: "iLizwi Radio — Where Africa Speaks",
-  url: "https://www.ilizwiradio.co.za/",
-  logo: {
-    "@type": "ImageObject",
-    url: "https://www.ilizwiradio.co.za/logo-192.jpg",
-    width: 1024,
-    height: 1024,
+  openGraph: {
+    title: "iLIZWI Radio",
+    description:
+      "Where Africa Speaks & The World Learns.",
+    url: "https://www.ilizwiradio.co.za",
+    siteName: "iLIZWI Radio",
+    type: "website",
+    locale: "en_ZA",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "iLIZWI Radio",
+      },
+    ],
   },
-  image: "https://www.ilizwiradio.co.za/og-image.jpg",
-  description:
-    "An online South African radio station celebrating African music, languages, culture, and community.",
-  areaServed: {
-    "@type": "Country",
-    name: "South Africa",
+
+  twitter: {
+    card: "summary_large_image",
+    title: "iLIZWI Radio",
+    description:
+      "African music, storytelling, language learning and AI-powered broadcasting.",
+    images: ["/og-image.jpg"],
+  },
+
+  alternates: {
+    canonical: "https://www.ilizwiradio.co.za",
   },
 };
 
@@ -78,13 +70,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body className="bg-white text-stone-800 ">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(stationStructuredData).replace(/</g, "\\u003c"),
-          }}
-        />
+      <body className="bg-white text-stone-800">
         <AuthProvider>
           <DataStoreProvider>
             {children}

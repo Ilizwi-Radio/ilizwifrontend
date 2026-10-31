@@ -17,7 +17,7 @@ export default function Footer() {
             </span>
           </a>
           <p className="text-white/60 text-sm mb-4">
-            A modern African digital media platform celebrating culture, language, music and storytelling — powered by
+            A modern African digital media platform celebrating culture, language, music and storytelling - powered by
             AI and community.
           </p>
           <div className="flex gap-3">

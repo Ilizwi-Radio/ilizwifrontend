@@ -163,10 +163,10 @@ export default function Hero() {
 
     loadBroadcast();
 
-    const interval = setInterval(loadBroadcast, 10000);
+    const interval = setInterval(loadBroadcast, isPlaying ? 2000 : 10000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isPlaying]);
 
   useEffect(() => {
     if (!audio || audio.src === new URL(activeStreamUrl, window.location.href).href) return;
@@ -217,7 +217,7 @@ export default function Hero() {
           </h1>
           <p className="text-white/80 text-lg max-w-md mb-8">
             Celebrating African culture through AI-powered broadcasting, music, language learning, and storytelling.
-            Connect with the heartbeat of the continent — 24/7.
+            Connect with the heartbeat of the continent-24/7.
           </p>
          <div className="flex flex-col sm:flex-row gap-3">
             <button

@@ -390,9 +390,7 @@ class AudioEngine {
             this.emitStreamingStatus('error');
           };
 
-          // Emit a chunk every 250ms — small enough for low latency,
-          // large enough not to overwhelm the socket.
-          recorder.start(250);
+          recorder.start(100);
           this.mediaRecorder = recorder;
           this.isStreaming = true;
           this.emitStreamingStatus('live');
