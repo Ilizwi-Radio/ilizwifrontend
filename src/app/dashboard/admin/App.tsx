@@ -33,8 +33,9 @@ import CareersManagement from "./CareersManagement";
 import PresentersManagement from "./PresentersManagement";
 import GenresManagement from "./GenresManagement";
 import SectionsManagement from "./SectionsManagement";
+import UsersManagement from "./UsersManagement";
 
-export default function App() {
+export default function App({ moderatorMode = false }: { moderatorMode?: boolean }) {
   const [presenters, setPresenters] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [shows, setShows] = useState<any[]>([]);
@@ -67,13 +68,15 @@ export default function App() {
     getSongs(true).then(setSongs).catch(console.error);
     getVideos(true).then(setVideos).catch(console.error);
     getCourses(true).then(setCourses).catch(console.error);
-    getSiteSettings().then((s) => setSectionSettings(s?.homepage_sections ?? {})).catch(console.error);
-    getRadioSourceMode()
-      .then(setRadioSourceMode)
-      .catch((error) => {
-        console.error("Failed to load radio source mode:", error);
-        setRadioSourceError("Could not load the current listener source setting.");
-      });
+    if (!moderatorMode) {
+      getSiteSettings().then((s) => setSectionSettings(s?.homepage_sections ?? {})).catch(console.error);
+      getRadioSourceMode()
+        .then(setRadioSourceMode)
+        .catch((error) => {
+          console.error("Failed to load radio source mode:", error);
+          setRadioSourceError("Could not load the current listener source setting.");
+        });
+    }
   }, []);
 
   const refreshPresenters = async () => { setPresenters(await getPresenters()); };
@@ -110,10 +113,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <DashboardHeader title="Admin Dashboard" subtitle="Full site content control" />
+      <DashboardHeader
+        title={moderatorMode ? "Content Manager Dashboard" : "Admin Dashboard"}
+        subtitle={moderatorMode ? "Manage station content" : "Full site and account control"}
+      />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <section className="mb-8 rounded-2xl border border-stone-200 bg-white p-6">
+        {!moderatorMode && <section className="mb-8 rounded-2xl border border-stone-200 bg-white p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-bold text-stone-900">Listener radio source</h2>
@@ -143,7 +149,7 @@ export default function App() {
           {radioSourceError && (
             <p role="alert" className="mt-3 text-sm text-red-700">{radioSourceError}</p>
           )}
-        </section>
+        </section>}
 
         <StatsRow
           presentersCount={presentersCount}
@@ -167,7 +173,7 @@ export default function App() {
           </Link>
         </div>
 
-        <TabNav tab={tab} setTab={setTab} />
+        <TabNav tab={tab} setTab={setTab} showAdminTabs={!moderatorMode} />
 
         <div className="bg-white border border-stone-200 rounded-2xl p-6">
           {tab === "schedule" && <ShowsManagement shows={shows} refreshShows={refreshShows} />}
@@ -181,10 +187,15 @@ export default function App() {
             <CareersManagement opportunities={opportunities} refreshOpportunities={refreshOpportunities} />
           )}
           {tab === "presenters" && (
-            <PresentersManagement presenters={presenters} refreshPresenters={refreshPresenters} />
+            <PresentersManagement
+              presenters={presenters}
+              refreshPresenters={refreshPresenters}
+              allowAccountActions={!moderatorMode}
+            />
           )}
           {tab === "genres" && <GenresManagement genres={genres} setGenres={setGenres} />}
-          {tab === "sections" && <SectionsManagement settings={sectionSettings} onToggle={toggleSection} />}
+          {!moderatorMode && tab === "sections" && <SectionsManagement settings={sectionSettings} onToggle={toggleSection} />}
+          {!moderatorMode && tab === "users" && <UsersManagement />}
         </div>
       </div>
     </div>

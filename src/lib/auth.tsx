@@ -10,6 +10,7 @@ import {
 export type Role =
   | "registered"
   | "presenter"
+  | "moderator"
   | "admin";
 
 export type AuthUser = {

@@ -57,7 +57,7 @@ export default function AuthPage() {
         "Login successful"
       );
 
-      const destination = result.user.role === "admin" || result.user.role === "presenter"
+      const destination = result.user.role === "admin" || result.user.role === "presenter" || result.user.role === "moderator"
         ? `/dashboard/${result.user.role}`
         : "/";
       window.setTimeout(() => router.replace(destination), 350);

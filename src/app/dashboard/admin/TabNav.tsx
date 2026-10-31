@@ -1,9 +1,21 @@
 import { TABS, TabKey } from "./adminConfig";
 
-export default function TabNav({ tab, setTab }: { tab: TabKey; setTab: (t: TabKey) => void }) {
+export default function TabNav({
+  tab,
+  setTab,
+  showAdminTabs = true,
+}: {
+  tab: TabKey;
+  setTab: (t: TabKey) => void;
+  showAdminTabs?: boolean;
+}) {
+  const tabs = TABS.filter((item) =>
+    showAdminTabs || (item.key !== "sections" && item.key !== "users")
+  );
+
   return (
     <div className="flex flex-wrap gap-2 mb-8 border-b border-stone-200 pb-4">
-      {TABS.map((t) => (
+      {tabs.map((t) => (
         <button
           key={t.key}
           onClick={() => setTab(t.key)}

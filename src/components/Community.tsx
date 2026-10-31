@@ -1,7 +1,7 @@
 "use client";
 import Icon from "./Icon";
 import FadeIn from "./FadeIn";
-import { getPresenters,followPresenter,unfollowPresenter } from "@/lib/api";
+import { getPresenters, getUploadedPresenterPhotoUrl, followPresenter, unfollowPresenter } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 export default function Community({ showStats = true }: { showStats?: boolean }) {
@@ -21,6 +21,9 @@ export default function Community({ showStats = true }: { showStats?: boolean })
     name: presenter.display_name,
 
     role: presenter.presenter_type,
+    photoUrl: presenter.has_uploaded_photo
+      ? getUploadedPresenterPhotoUrl(presenter.id)
+      : presenter.photo_url || null,
 
     followers: "0",
     following: false,
@@ -139,10 +142,12 @@ if (!presenters.length) {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 text-left mb-12">
             {presenters.map((p) => (
               <div key={p.id} className="rounded-xl overflow-hidden bg-white border border-stone-200">
-                <div
-                  className="h-40 relative flex items-center justify-center"
-                  style={{ background: `linear-gradient(135deg,${p.from},${p.to})` }}
-                >
+                <div className="h-40 relative flex items-center justify-center bg-gradient-to-br from-green-900 to-stone-950">
+                  {p.photoUrl ? (
+                    <img src={p.photoUrl} alt={`${p.name} presenter portrait`} className="h-full w-full object-cover" />
+                  ) : (
+                    <Icon name="user" className="w-10 h-10 text-white/40" />
+                  )}
                   {p.ai && (
                     <span className="absolute top-2.5 left-2.5 bg-purple-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
                       AI PRESENTER

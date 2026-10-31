@@ -103,6 +103,11 @@ export default function AuthModal({
               Presenter Studio
             </button>
           )}
+          {user.role === "moderator" && (
+            <button onClick={() => { onClose(); router.push("/dashboard/moderator"); }} className="w-full bg-green-900 text-white rounded-xl py-3 font-semibold">
+              Content Manager Dashboard
+            </button>
+          )}
           {user.role === "registered" && (
             <p className="text-center text-sm text-neutral-600 py-2">You’re signed in as a listener.</p>
           )}
@@ -179,7 +184,7 @@ export default function AuthModal({
         // console.log("USER SENT TO HOME:", result.user);
       }
 
-      if (result.user.role === "admin" || result.user.role === "presenter") {
+      if (result.user.role === "admin" || result.user.role === "presenter" || result.user.role === "moderator") {
         router.push(`/dashboard/${result.user.role}`);
       } else {
         router.push("/");

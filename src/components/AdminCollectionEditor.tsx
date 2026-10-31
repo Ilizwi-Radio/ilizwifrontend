@@ -33,6 +33,7 @@ export default function AdminCollectionEditor<T extends Row>({
   onDelete,
   columns = ["title", "name"],
   rowActions,
+  hideDelete = false,
 }: {
   title: string;
   description?: string;
@@ -47,6 +48,7 @@ export default function AdminCollectionEditor<T extends Row>({
   /** Optional extra buttons per row, beyond the built-in Edit/Delete —
    * e.g. "Reset Password", "Link Account". */
   rowActions?: RowAction<T>[];
+  hideDelete?: boolean;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -201,14 +203,14 @@ export default function AdminCollectionEditor<T extends Row>({
               <button onClick={() => startEdit(item)} className="text-xs font-semibold text-green-800 hover:text-green-900 flex items-center gap-1">
                 <Icon name="chevron" className="w-3.5 h-3.5" /> Edit
               </button>
-              <button
+              {!hideDelete && <button
                 onClick={() => {
                   if (confirm(`Delete "${label(item)}"? This can't be undone.`)) onDelete(item.id);
                 }}
                 className="text-xs font-semibold text-red-600 hover:text-red-700"
               >
                 Delete
-              </button>
+              </button>}
             </div>
           </div>
         ))}

@@ -17,7 +17,7 @@ export default function RequireRole({ role, children }: { role: Role; children: 
     }
     const hasRoleAccess = user.role === role || (role === "presenter" && user.role === "admin");
     if (!hasRoleAccess) {
-      router.replace(user.role === "admin" || user.role === "presenter" ? `/dashboard/${user.role}` : "/");
+      router.replace(["admin", "presenter", "moderator"].includes(user.role) ? `/dashboard/${user.role}` : "/");
     }
   }, [loading, user, role, router]);
 

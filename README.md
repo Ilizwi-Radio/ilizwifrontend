@@ -8,6 +8,7 @@ iLIZWI Radio is a Next.js website and Express API for an online radio station. T
 - Single sign-in flow that routes admins and presenters to their dashboards; listener and registered-user accounts remain on the public site.
 - Admin tools for managing station content and presenters.
 - Presenter tools for profiles, shows, music, live broadcasting, and recording audio locally in the browser for download.
+- Live presenter audio is sent to the relay in 100 ms MediaRecorder chunks; the public player checks for live-source changes every 2 seconds while playing.
 - Remote co-hosting lets one assigned co-host join a show's live audio from another location; the primary presenter remains the only station-stream host.
 - Express API backed by PostgreSQL when configured.
 
@@ -96,4 +97,6 @@ Backend/   Local checkout of the separate Express API repository (optional)
 - This project does not include a full database schema bootstrap. Use the PostgreSQL schema configured for your deployment before relying on persistent admin or presenter data.
 - Apply `Backend/migrations/001_show_cohosts.sql` to the existing database before using co-host assignment. Configure a backend TURN service for presenter networks that cannot connect directly.
 - The presenter relay requires FFmpeg and a reachable Icecast source endpoint. The default backend relay uses the native Icecast source connection.
+- For lower Icecast listener startup buffering, configure the active global `<limits>` in `icecast.xml` with `<burst-on-connect>0</burst-on-connect>` and `<burst-size>8192</burst-size>`. Keep `<queue-size>` larger than the burst size. These settings reduce the initial burst; they do not by themselves establish or eliminate steady-state end-to-end latency. See the backend README for deployment steps.
+- Admins can manage account roles and reversibly deactivate accounts; moderators can manage station content without access to users or roles. Presenter portraits support either a photo URL or an image upload stored in PostgreSQL. Apply `Backend/migrations/002_user_management_and_presenter_photos.sql` before enabling these features.
 - The public website player and current-song display use the station's Zeno stream and metadata feed. Zeno may not provide a title for every stream segment.

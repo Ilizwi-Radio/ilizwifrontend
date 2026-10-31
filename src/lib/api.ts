@@ -222,6 +222,52 @@ export async function getPresenters() {
   return response.json();
 }
 
+export function getUploadedPresenterPhotoUrl(id: string) {
+  return `${API_URL}/api/presenters/${encodeURIComponent(id)}/photo`;
+}
+
+export async function setPresenterPhotoUrl(id: string, photoUrl: string) {
+  const response = await fetch(`${API_URL}/api/presenters/${encodeURIComponent(id)}/photo-url`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    },
+    body: JSON.stringify({ photo_url: photoUrl }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to save presenter photo URL.");
+  return data;
+}
+
+export async function uploadPresenterPhoto(id: string, file: File) {
+  const dataBase64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read the selected image."));
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== "string") {
+        reject(new Error("Could not read the selected image."));
+        return;
+      }
+      resolve(result.slice(result.indexOf(",") + 1));
+    };
+    reader.readAsDataURL(file);
+  });
+
+  const response = await fetch(`${API_URL}/api/presenters/${encodeURIComponent(id)}/photo`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    },
+    body: JSON.stringify({ mime_type: file.type, data_base64: dataBase64 }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to upload presenter photo.");
+  return data;
+}
+
 export async function assignPrimaryPresenterToShow(showId: string, presenterId: string) {
   const response = await fetch(`${API_URL}/api/admin/shows/${encodeURIComponent(showId)}/assign`, {
     method: "POST",
@@ -853,6 +899,44 @@ export async function linkPresenterAccount(id: string, email: string) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "Failed to link presenter account.");
   return data.presenter;
+}
+
+export async function getAdminUsers() {
+  const response = await fetch(`${API_URL}/api/admin/users`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
+    cache: "no-store",
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to load users.");
+  return data;
+}
+
+export async function updateManagedUserRole(id: string, role: string) {
+  const response = await fetch(`${API_URL}/api/admin/users/${encodeURIComponent(id)}/role`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    },
+    body: JSON.stringify({ role }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to update user role.");
+  return data;
+}
+
+export async function setManagedUserActive(id: string, isActive: boolean) {
+  const response = await fetch(`${API_URL}/api/admin/users/${encodeURIComponent(id)}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    },
+    body: JSON.stringify({ is_active: isActive }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Failed to update account status.");
+  return data;
 }
 
 

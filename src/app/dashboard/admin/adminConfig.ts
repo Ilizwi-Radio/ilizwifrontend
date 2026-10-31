@@ -10,6 +10,7 @@ export const TABS = [
   { key: "presenters", label: "Presenters" },
   { key: "genres", label: "Genres" },
   { key: "sections", label: "Homepage Sections" },
+  { key: "users", label: "Users" },
 ] as const;
 
 // Sections the admin can switch on/off on the public homepage.
