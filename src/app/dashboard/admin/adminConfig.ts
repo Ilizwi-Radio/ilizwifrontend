@@ -37,7 +37,6 @@ export const scheduleFields: FieldConfig[] = [
   { key: "cta", label: "Button Label", type: "select", options: ["Join Live", "Set Reminder"] },
   { key: "imgFrom", label: "Gradient Start", type: "color", placeholder: "#ea6a10" },
   { key: "imgTo", label: "Gradient End", type: "color", placeholder: "#7a2e0f" },
-  { key: "presenterId", label: "Presenter Account ID (optional)", placeholder: "presenter-sipho" },
 ];
 
 export const languageFields: FieldConfig[] = [

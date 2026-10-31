@@ -222,6 +222,20 @@ export async function getPresenters() {
   return response.json();
 }
 
+export async function assignPrimaryPresenterToShow(showId: string, presenterId: string) {
+  const response = await fetch(`${API_URL}/api/admin/shows/${encodeURIComponent(showId)}/assign`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    },
+    body: JSON.stringify({ presenterId }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Failed to assign the primary presenter.");
+  return data?.show;
+}
+
 export async function getMyPresenterProfile() {
   const response = await fetch(`${API_URL}/api/presenters/me/profile`, {
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -855,7 +869,10 @@ export async function startBroadcast(
     }
   );
 
-  return response.json();
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Failed to start the broadcast.");
+  if (!data?.id) throw new Error("The broadcast service returned no broadcast ID.");
+  return data;
 }
 
 export async function stopBroadcast(

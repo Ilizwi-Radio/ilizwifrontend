@@ -63,6 +63,7 @@ export default function PresenterStudio({
 }: PresenterStudioProps) {
   const { user } = useAuth();
   const [myPresenterProfileId, setMyPresenterProfileId] = useState<string | null>(null);
+  const [presenterProfileLoaded, setPresenterProfileLoaded] = useState(false);
   // Broadcast State
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [cohostRoomJoined, setCohostRoomJoined] = useState(false);
@@ -133,7 +134,8 @@ export default function PresenterStudio({
       });
       getMyPresenterProfile()
         .then((profile) => setMyPresenterProfileId(profile.id))
-        .catch(() => setMyPresenterProfileId(null));
+        .catch(() => setMyPresenterProfileId(null))
+        .finally(() => setPresenterProfileLoaded(true));
     }, []);
 
   const [icecastStatus, setIcecastStatus] =  useState({ online: false,  listeners: 0,  bitrate: 0, listenerPeak: 0,});
@@ -307,6 +309,7 @@ useEffect(() => {
     }
 
     setIsGoingLive(true);
+    let stage = "microphone access";
 
     try {
       const res = await audioEngine.startMicrophone();
@@ -322,8 +325,10 @@ useEffect(() => {
         return;
       }
 
+      stage = "relay authorization";
       try {
         const relayToken = await getBroadcastRelayToken(selectedShowId);
+        stage = "radio relay connection";
         await audioEngine.startStreaming(RELAY_WS_URL, relayToken);
       } catch (streamErr) {
         if (!cohostRoomJoined) audioEngine.stopMicrophone();
@@ -336,6 +341,7 @@ useEffect(() => {
 
       let broadcast;
       try {
+        stage = "broadcast registration";
         broadcast = await startBroadcast(selectedShowId, STREAM_URL);
       } catch (apiErr) {
         // Streaming to Icecast succeeded but recording the broadcast in our
@@ -365,8 +371,14 @@ useEffect(() => {
         /* ignore */
       }
     } catch (error) {
-      console.error("Failed to start broadcast", error);
-      alert("Couldn't go live. Please check your connection and try again.");
+      console.error(`Failed during ${stage}`, error);
+      audioEngine.stopStreaming();
+      if (!cohostRoomJoined) audioEngine.stopMicrophone();
+      const detail = error instanceof Error ? error.message : "Unknown error.";
+      const guidance = detail === "Route not found."
+        ? "The live relay endpoint is missing from the deployed backend. Update and restart the backend, then try again."
+        : detail;
+      alert(`Couldn't go live during ${stage}: ${guidance}`);
     } finally {
       setIsGoingLive(false);
     }
@@ -590,6 +602,15 @@ useEffect(() => {
 
   return (
     <div className="space-y-8">
+      {user?.role === "admin" && presenterProfileLoaded && !myPresenterProfileId && (
+        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
+          <p className="font-semibold">Set up your presenter profile before going live</p>
+          <p className="mt-1 text-sm">
+            In Admin Dashboard → Presenters, create a profile and use “Link Login” with your admin account. Then in Live Sessions, set that profile as the show’s primary host.
+          </p>
+          <a href="/dashboard/admin" className="mt-2 inline-block text-sm font-semibold underline">Open Admin Dashboard</a>
+        </div>
+      )}
       {/* Studio Header Bar */}
       <div className="bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div className="flex items-center gap-4 flex-wrap">
