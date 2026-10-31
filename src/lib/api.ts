@@ -677,8 +677,13 @@ export async function getOpportunities(
 //=== Site Settings ===//
 export async function getSiteSettings() {
   const response = await fetch(
-    `${API_URL}/api/site-settings`
+    `${API_URL}/api/site-settings`,
+    { cache: "no-store" }
   );
+
+  if (!response.ok) {
+    throw new Error("Failed to load homepage settings.");
+  }
 
   return response.json();
 }
@@ -697,6 +702,10 @@ export async function updateSiteSettings(
       body: JSON.stringify(settings),
     }
   );
+
+  if (!response.ok) {
+    throw new Error("Failed to save homepage settings.");
+  }
 
   return response.json();
 }

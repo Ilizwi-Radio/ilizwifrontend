@@ -15,7 +15,9 @@ export const TABS = [
 // Sections the admin can switch on/off on the public homepage.
 // Keys are stored in site settings; a missing key means visible.
 export const HOMEPAGE_SECTIONS = [
-  { key: "schedule", label: "Live Sessions", description: "Homepage schedule grid" },
+  { key: "schedule", label: "Live Broadcasts", description: "Homepage show schedule" },
+  { key: "communityStats", label: "Community stats", description: "Daily conversations, badges earned, and community rating" },
+  { key: "badgePromo", label: "Cultural badges banner", description: "Earn Cultural Badges sign-up banner" },
   { key: "languages", label: "Language Hub", description: "Learn African Languages section" },
   { key: "music", label: "Music Library", description: "Tracks and genre filter pills" },
   { key: "videos", label: "Video Hub", description: "Featured and recent videos" },

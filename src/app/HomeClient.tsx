@@ -44,13 +44,13 @@ export default function HomeClient({
         onClose={() => setIsProfileOpen(false)}
       />
       <Hero />
-      {sections.liveSessions !== false && <LiveBroadcasts initialShows={initialShows} />}
+      {sections.schedule !== false && <LiveBroadcasts initialShows={initialShows} />}
       {sections.music !== false && <MusicLibrary />}
-      <BadgePromo />
+      {sections.badgePromo !== false && <BadgePromo />}
       {sections.videos !== false && <VideoHub />}
       {sections.languages !== false && <LanguageHub />}
       {sections.events !== false && <Events initialEvents={initialEvents} />}
-      <Community />
+      <Community showStats={sections.communityStats !== false} />
       {sections.careers !== false && <Careers />}
       <Newsletter />
       <Footer />

@@ -4,7 +4,7 @@ import FadeIn from "./FadeIn";
 import { getPresenters,followPresenter,unfollowPresenter } from "@/lib/api";
 import { useEffect, useState } from "react";
 
-export default function Community() {
+export default function Community({ showStats = true }: { showStats?: boolean }) {
   const [presenters, setPresenters] =
   useState<any[]>([]);
   useEffect(() => {
@@ -171,35 +171,37 @@ if (!presenters.length) {
             ))}
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-5">
-            <div className="border border-stone-200 rounded-xl p-6 flex items-center gap-4 bg-white">
-              <span className="w-11 h-11 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                <Icon name="chat" className="w-5 h-5" />
-              </span>
-              <div className="text-left">
-                <div className="font-extrabold text-xl text-green-900">142K</div>
-                <div className="text-stone-500 text-sm">Daily Conversations</div>
+          {showStats && (
+            <div className="grid sm:grid-cols-3 gap-5">
+              <div className="border border-stone-200 rounded-xl p-6 flex items-center gap-4 bg-white">
+                <span className="w-11 h-11 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
+                  <Icon name="chat" className="w-5 h-5" />
+                </span>
+                <div className="text-left">
+                  <div className="font-extrabold text-xl text-green-900">142K</div>
+                  <div className="text-stone-500 text-sm">Daily Conversations</div>
+                </div>
+              </div>
+              <div className="border border-stone-200 rounded-xl p-6 flex items-center gap-4 bg-white">
+                <span className="w-11 h-11 rounded-xl bg-yellow-100 text-yellow-600 flex items-center justify-center">
+                  <Icon name="award" className="w-5 h-5" />
+                </span>
+                <div className="text-left">
+                  <div className="font-extrabold text-xl text-green-900">38K</div>
+                  <div className="text-stone-500 text-sm">Cultural Badges Earned</div>
+                </div>
+              </div>
+              <div className="border border-stone-200 rounded-xl p-6 flex items-center gap-4 bg-white">
+                <span className="w-11 h-11 rounded-xl bg-green-100 text-green-700 flex items-center justify-center">
+                  <Icon name="star" className="w-5 h-5" />
+                </span>
+                <div className="text-left">
+                  <div className="font-extrabold text-xl text-green-900">4.9★</div>
+                  <div className="text-stone-500 text-sm">Community Rating</div>
+                </div>
               </div>
             </div>
-            <div className="border border-stone-200 rounded-xl p-6 flex items-center gap-4 bg-white">
-              <span className="w-11 h-11 rounded-xl bg-yellow-100 text-yellow-600 flex items-center justify-center">
-                <Icon name="award" className="w-5 h-5" />
-              </span>
-              <div className="text-left">
-                <div className="font-extrabold text-xl text-green-900">38K</div>
-                <div className="text-stone-500 text-sm">Cultural Badges Earned</div>
-              </div>
-            </div>
-            <div className="border border-stone-200 rounded-xl p-6 flex items-center gap-4 bg-white">
-              <span className="w-11 h-11 rounded-xl bg-green-100 text-green-700 flex items-center justify-center">
-                <Icon name="star" className="w-5 h-5" />
-              </span>
-              <div className="text-left">
-                <div className="font-extrabold text-xl text-green-900">4.9★</div>
-                <div className="text-stone-500 text-sm">Community Rating</div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
     </FadeIn>
