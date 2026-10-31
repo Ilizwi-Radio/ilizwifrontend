@@ -1,8 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getPresenters, getEvents, getShows, getOpportunities, getVideos, getSongs, getCourses } from "@/lib/api";
-import { getSiteSettings, updateSiteSettings } from "@/lib/api"; 
+import {
+  getPresenters,
+  getEvents,
+  getShows,
+  getOpportunities,
+  getVideos,
+  getSongs,
+  getCourses,
+} from "@/lib/api";
+import {
+  getRadioSourceMode,
+  isRadioSourceMode,
+  updateRadioSourceMode,
+  type RadioSourceMode,
+} from "@/lib/radioSourceApi";
+import { getSiteSettings, updateSiteSettings } from "@/lib/api";
 import DashboardHeader from "@/components/DashboardHeader";
 import Link from "next/link";
 import Icon from "@/components/Icon";
@@ -30,6 +44,9 @@ export default function App() {
   const [courses, setCourses] = useState<any[]>([]);
 
   const [sectionSettings, setSectionSettings] = useState<Record<string, boolean>>({});
+  const [radioSourceMode, setRadioSourceMode] = useState<RadioSourceMode>("auto");
+  const [radioSourceError, setRadioSourceError] = useState<string | null>(null);
+  const [savingRadioSource, setSavingRadioSource] = useState(false);
 
   const [genres, setGenres] = useState<string[]>(["All"]);
   const [tab, setTab] = useState<TabKey>("schedule");
@@ -51,6 +68,12 @@ export default function App() {
     getVideos(true).then(setVideos).catch(console.error);
     getCourses(true).then(setCourses).catch(console.error);
     getSiteSettings().then((s) => setSectionSettings(s?.homepage_sections ?? {})).catch(console.error);
+    getRadioSourceMode()
+      .then(setRadioSourceMode)
+      .catch((error) => {
+        console.error("Failed to load radio source mode:", error);
+        setRadioSourceError("Could not load the current listener source setting.");
+      });
   }, []);
 
   const refreshPresenters = async () => { setPresenters(await getPresenters()); };
@@ -72,13 +95,56 @@ export default function App() {
     }
   };
 
-
+  const changeRadioSourceMode = async (mode: RadioSourceMode) => {
+    setSavingRadioSource(true);
+    setRadioSourceError(null);
+    try {
+      setRadioSourceMode(await updateRadioSourceMode(mode));
+    } catch (error) {
+      console.error("Failed to update radio source mode:", error);
+      setRadioSourceError("Could not save this setting. Please try again.");
+    } finally {
+      setSavingRadioSource(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-stone-50">
       <DashboardHeader title="Admin Dashboard" subtitle="Full site content control" />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        <section className="mb-8 rounded-2xl border border-stone-200 bg-white p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-stone-900">Listener radio source</h2>
+              <p className="mt-1 max-w-2xl text-sm text-stone-600">
+                Automatic follows the presenter Icecast stream while a broadcast is live, then returns listeners to Zeno.
+                Use an override if you need to test or temporarily fall back.
+              </p>
+            </div>
+            <label className="flex items-center gap-3 text-sm font-semibold text-stone-700">
+              Source
+              <select
+                value={radioSourceMode}
+                disabled={savingRadioSource}
+                onChange={(event) => {
+                  if (isRadioSourceMode(event.target.value)) {
+                    changeRadioSourceMode(event.target.value);
+                  }
+                }}
+                className="rounded-lg border border-stone-300 bg-white px-3 py-2 disabled:opacity-60"
+              >
+                <option value="auto">Automatic</option>
+                <option value="zeno">Force Zeno</option>
+                <option value="presenter">Force presenter stream</option>
+              </select>
+            </label>
+          </div>
+          {radioSourceError && (
+            <p role="alert" className="mt-3 text-sm text-red-700">{radioSourceError}</p>
+          )}
+        </section>
+
         <StatsRow
           presentersCount={presentersCount}
           showsCount={showsCount}

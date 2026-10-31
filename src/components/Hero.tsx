@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Icon from "./Icon";
 import { getBroadcastStatus } from "@/lib/api";
+import { getRadioSourceMode, type RadioSourceMode } from "@/lib/radioSourceApi";
 
 type Bar = { height: number; delay: number };
 const ZENO_STREAM_URL = "https://stream.zeno.fm/mlevckhyptmvv";
 const ZENO_METADATA_URL = "https://api.zeno.fm/mounts/metadata/subscribe/mlevckhyptmvv";
+const PRESENTER_STREAM_URL = `${process.env.NEXT_PUBLIC_STREAM_URL}/live`;
 
 // Deterministic fallback used for the server-rendered markup so it matches
 // what React expects on the very first client render (avoids hydration
@@ -20,10 +22,17 @@ export default function Hero() {
   const [bars, setBars] = useState<Bar[]>(STATIC_BARS);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [liveBroadcast, setLiveBroadcast] = useState<any>(null);
+  const [radioSourceMode, setRadioSourceMode] = useState<RadioSourceMode>("auto");
   const [nowPlaying, setNowPlaying] = useState<{ title: string; artist: string } | null>(null);
   const [volume, setVolume] = useState(0.7);
   const [isPlaying, setIsPlaying] = useState(false);
   const [streamError, setStreamError] = useState(false);
+  const isPresenterLive = liveBroadcast?.status === "live";
+  const activeSource = radioSourceMode === "presenter"
+    || (radioSourceMode === "auto" && isPresenterLive)
+    ? "presenter"
+    : "zeno";
+  const activeStreamUrl = activeSource === "presenter" ? PRESENTER_STREAM_URL : ZENO_STREAM_URL;
 
   useEffect(() => {
     const metadataStream = new EventSource(ZENO_METADATA_URL);
@@ -55,9 +64,9 @@ export default function Hero() {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
 
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: liveBroadcast?.show_title || "iLIZWI Radio",
+      title: activeSource === "presenter" ? liveBroadcast?.show_title || "iLIZWI Radio" : "iLIZWI Radio",
       artist: liveBroadcast?.presenter_name || "iLIZWI Radio",
-      album: "iLIZWI Radio — Live",
+      album: activeSource === "presenter" ? "iLIZWI Radio — Presenter Live" : "iLIZWI Radio",
       artwork: [
         { src: "/logo-96.png", sizes: "96x96", type: "image/png" },
         { src: "/logo-192.png", sizes: "192x192", type: "image/png" },
@@ -86,10 +95,14 @@ export default function Hero() {
     try {
       // First click: create player
       if (!audio) {
-        const player = new Audio(ZENO_STREAM_URL);
+        const player = new Audio(activeStreamUrl);
 
         player.onplay = () => setIsPlaying(true);
         player.onpause = () => setIsPlaying(false);
+        player.onerror = () => {
+          setIsPlaying(false);
+          setStreamError(true);
+        };
         player.onended = () => {
           setIsPlaying(false);
           setAudio(null);
@@ -131,19 +144,20 @@ export default function Hero() {
 };
 
   useEffect(() => {
-    getBroadcastStatus()
-      .then(setLiveBroadcast)
-      .catch(console.error);
-  }, []);
-
-  // This updates every 10 seconds. Auto Refresh
-  useEffect(() => {
     const loadBroadcast = async () => {
-      try {
-        const data = await getBroadcastStatus();
-        setLiveBroadcast(data);
-      } catch (err) {
-        console.error(err);
+      const [broadcastResult, sourceModeResult] = await Promise.allSettled([
+        getBroadcastStatus(),
+        getRadioSourceMode(),
+      ]);
+      if (broadcastResult.status === "fulfilled") {
+        setLiveBroadcast(broadcastResult.value);
+      } else {
+        console.error("Failed to load broadcast status:", broadcastResult.reason);
+      }
+      if (sourceModeResult.status === "fulfilled") {
+        setRadioSourceMode(sourceModeResult.value);
+      } else {
+        console.error("Failed to load radio source mode:", sourceModeResult.reason);
       }
     };
 
@@ -153,6 +167,20 @@ export default function Hero() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!audio || audio.src === new URL(activeStreamUrl, window.location.href).href) return;
+    const wasPlaying = !audio.paused;
+    audio.pause();
+    audio.src = activeStreamUrl;
+    audio.load();
+    if (wasPlaying) {
+      audio.play().catch((error) => {
+        setStreamError(true);
+        console.error("Could not switch the live radio source:", error);
+      });
+    }
+  }, [audio, activeStreamUrl]);
 
   useEffect(() => {
     // Randomize only after mount, once we're safely past hydration.
@@ -234,9 +262,20 @@ export default function Hero() {
           <div className="p-5">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <div className="text-[11px] font-bold text-yellow-400 tracking-wide mb-1">{liveBroadcast?.show_title || (nowPlaying ? "NOW PLAYING" : "Stay Tuned")}</div>
-                <div className="font-bold text-lg">{nowPlaying?.title || liveBroadcast?.track_title || liveBroadcast?.show_title || "Stay Tuned"}</div>
-                <div className="text-white/60 text-sm">{nowPlaying?.artist || liveBroadcast?.track_artist || liveBroadcast?.presenter_name || "ILIZWI RADIO"}{liveBroadcast?.language ? ` • ${liveBroadcast.language}` : ""}</div>
+                <div className="text-[11px] font-bold text-yellow-400 tracking-wide mb-1">
+                  {activeSource === "presenter" ? "PRESENTER LIVE" : nowPlaying ? "NOW PLAYING" : "Stay Tuned"}
+                </div>
+                <div className="font-bold text-lg">
+                  {activeSource === "presenter"
+                    ? liveBroadcast?.track_title || liveBroadcast?.show_title || "Live Presenter"
+                    : nowPlaying?.title || "Stay Tuned"}
+                </div>
+                <div className="text-white/60 text-sm">
+                  {activeSource === "presenter"
+                    ? liveBroadcast?.track_artist || liveBroadcast?.presenter_name || "ILIZWI RADIO"
+                    : nowPlaying?.artist || "ILIZWI RADIO"}
+                  {activeSource === "presenter" && liveBroadcast?.language ? ` • ${liveBroadcast.language}` : ""}
+                </div>
               </div>
               <div className="text-right">
                 <div className="text-[11px] text-white/50">Broadcast</div>

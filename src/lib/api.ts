@@ -894,7 +894,8 @@ export async function stopBroadcast(
 
 export async function getBroadcastStatus() {
   const response = await fetch(
-    `${API_URL}/api/broadcast/status`
+    `${API_URL}/api/broadcast/status`,
+    { cache: "no-store" }
   );
 
   const text = await response.text();
