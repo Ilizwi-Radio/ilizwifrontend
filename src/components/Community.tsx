@@ -144,7 +144,11 @@ if (!presenters.length) {
               <div key={p.id} className="rounded-xl overflow-hidden bg-white border border-stone-200">
                 <div className="h-40 relative flex items-center justify-center bg-gradient-to-br from-green-900 to-stone-950">
                   {p.photoUrl ? (
-                    <img src={p.photoUrl} alt={`${p.name} presenter portrait`} className="h-full w-full object-cover" />
+                    <img
+                      src={p.photoUrl}
+                      alt={`${p.name} presenter portrait`}
+                      className="absolute inset-0 h-full w-full object-cover object-top"
+                    />
                   ) : (
                     <Icon name="user" className="w-10 h-10 text-white/40" />
                   )}
@@ -153,7 +157,6 @@ if (!presenters.length) {
                       AI PRESENTER
                     </span>
                   )}
-                  <Icon name="user" className="w-10 h-10 text-white/40" />
                 </div>
                 <div className="p-4">
                   <div className="font-bold text-green-900">{p.name}</div>
