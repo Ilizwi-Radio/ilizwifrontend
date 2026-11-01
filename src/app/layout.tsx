@@ -8,64 +8,105 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.ilizwiradio.co.za"),
 
   title: {
-    default: "iLIZWI Radio",
+    default:
+      "iLIZWI Radio | African Music, Culture & Live Streaming Radio",
     template: "%s | iLIZWI Radio",
   },
 
   description:
-    "Listen live to iLIZWI Radio. Discover African music, culture, storytelling, language learning, and AI-powered broadcasting from anywhere in the world.",
+    "Listen live to iLIZWI Radio and discover African music, storytelling, culture, language learning, and AI-powered broadcasting from South Africa to the world.",
 
   keywords: [
     "iLIZWI Radio",
     "African Radio",
     "Online Radio",
-    "South Africa Radio",
-    "Zulu Radio",
+    "South African Radio",
     "Live Radio Streaming",
     "African Music",
     "African Culture",
+    "Zulu Radio",
     "Language Learning",
+    "Internet Radio",
   ],
 
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
-
-  openGraph: {
-    title: "iLIZWI Radio",
-    description:
-      "Where Africa Speaks & The World Learns.",
-    url: "https://www.ilizwiradio.co.za",
-    siteName: "iLIZWI Radio",
-    type: "website",
-    locale: "en_ZA",
-    images: [
-      {
-        url: "https://www.ilizwiradio.co.za/og-image-v2.jpg",
-        width: 1200,
-        height: 630,
-        alt: "iLIZWI Radio",
-      },
-    ],
-  },
-  icons: {
-  icon: "https://www.ilizwiradio.co.za/favicon.ico",
-  shortcut: "https://www.ilizwiradio.co.za/favicon.ico",
-  apple: "https://www.ilizwiradio.co.za/apple-touch-icon.png",
-},
-
-  twitter: {
-    card: "summary_large_image",
-    title: "iLIZWI Radio",
-    description:
-      "African music, storytelling, language learning and AI-powered broadcasting.",
-    images: ["https://www.ilizwiradio.co.za/og-image-v2.jpg"],
-  },
-
 
   alternates: {
     canonical: "https://www.ilizwiradio.co.za",
+  },
+
+  openGraph: {
+    type: "website",
+    locale: "en_ZA",
+    url: "https://www.ilizwiradio.co.za",
+    siteName: "iLIZWI Radio",
+    title:
+      "iLIZWI Radio | African Music, Culture & Live Streaming Radio",
+    description:
+      "Listen live to African music, storytelling, language learning, culture and AI-powered broadcasting from anywhere in the world.",
+
+    images: [
+      {
+        url: "https://www.ilizwiradio.co.za/og-image-v2.webp",
+        width: 1200,
+        height: 630,
+        alt: "iLIZWI Radio - Where Africa Speaks & The World Learns",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title:
+      "iLIZWI Radio | African Music, Culture & Live Streaming Radio",
+    description:
+      "Listen live to African music, storytelling, language learning and AI-powered broadcasting.",
+
+    creator: "@ilizwiradio",
+    site: "@ilizwiradio",
+
+    images: [
+      "https://www.ilizwiradio.co.za/og-image-v2.webp",
+    ],
+  },
+
+  icons: {
+    icon: [
+      {
+        url: "/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/favicon-32x32.png",
+        type: "image/png",
+        sizes: "32x32",
+      },
+    ],
+
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+      },
+    ],
+
+    shortcut: ["/favicon.ico"],
+  },
+
+  manifest: "/site.webmanifest",
+
+  other: {
+    "theme-color": "#046A38",
   },
 };
 
@@ -82,6 +123,26 @@ export default function RootLayout({
             {children}
           </DataStoreProvider>
         </AuthProvider>
+           <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "RadioStation",
+              name: "iLIZWI Radio",
+              url: "https://www.ilizwiradio.co.za",
+              logo: "https://www.ilizwiradio.co.za/logo.png",
+              image: "https://www.ilizwiradio.co.za/og-image-v2.webp",
+              description:
+                "African music, storytelling, culture, language learning and AI-powered broadcasting.",
+              sameAs: [
+                "https://www.facebook.com/ilizwiradio",
+                "https://x.com/ilizwiradio",
+                "https://www.instagram.com/ilizwiradio"
+              ]
+            }),
+          }}
+        />
       </body>
     </html>
   );

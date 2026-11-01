@@ -1,0 +1,20 @@
+{
+  "name": "iLIZWI Radio",
+  "short_name": "iLIZWI Radio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#046A38",
+  "theme_color": "#046A38",
+  "icons": [
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/svg"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/svg"
+    }
+  ]
+}
