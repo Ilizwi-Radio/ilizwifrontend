@@ -24,7 +24,7 @@ export default function Newsletter() {
             type="email"
             required
             placeholder="Enter your email"
-            className="rounded-full px-5 py-3 text-stone-800 flex-1 sm:w-72 outline-none"
+            className="min-w-0 rounded-full px-5 py-3 text-stone-800 flex-1 sm:w-72 outline-none"
           />
           <button className="btn-pill bg-green-900 hover:bg-green-800 px-5 py-3 font-semibold flex items-center gap-2 shrink-0">
             {subscribed ? "Subscribed ✓" : "Subscribe"} {!subscribed && <Icon name="send" />}

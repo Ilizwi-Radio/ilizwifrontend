@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Icon from "./Icon";
 import { getBroadcastStatus } from "@/lib/api";
 import { getRadioSourceMode, type RadioSourceMode } from "@/lib/radioSourceApi";
@@ -21,6 +21,7 @@ const STATIC_BARS: Bar[] = Array.from({ length: 48 }, (_, i) => ({
 export default function Hero() {
   const [bars, setBars] = useState<Bar[]>(STATIC_BARS);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [liveBroadcast, setLiveBroadcast] = useState<any>(null);
   const [radioSourceMode, setRadioSourceMode] = useState<RadioSourceMode>("auto");
   const [nowPlaying, setNowPlaying] = useState<{ title: string; artist: string } | null>(null);
@@ -60,43 +61,12 @@ export default function Hero() {
 
     return () => metadataStream.close();
   }, []);
-  const setMediaSessionMetadata = () => {
-    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
-
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: activeSource === "presenter" ? liveBroadcast?.show_title || "iLIZWI Radio" : "iLIZWI Radio",
-      artist: liveBroadcast?.presenter_name || "iLIZWI Radio",
-      album: activeSource === "presenter" ? "iLIZWI Radio — Presenter Live" : "iLIZWI Radio",
-      artwork: [
-        { src: "/logo-96.png", sizes: "96x96", type: "image/png" },
-        { src: "/logo-192.png", sizes: "192x192", type: "image/png" },
-        { src: "/logo-256.png", sizes: "256x256", type: "image/png" },
-        { src: "/logo-512.png", sizes: "512x512", type: "image/png" },
-      ],
-    });
-    navigator.mediaSession.playbackState = "playing";
-
-    navigator.mediaSession.setActionHandler("play", async () => {
-       if (audio) { await audio.play();   setIsPlaying(true);}});
-
-    navigator.mediaSession.setActionHandler("pause", () => {
-      if (audio) { audio.pause();    setIsPlaying(false); }});
-
-    navigator.mediaSession.setActionHandler("stop", () => {handleStop(); }); };
-
-  const clearMediaSession = () => {
-    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
-    navigator.mediaSession.playbackState = "paused";
-    navigator.mediaSession.metadata = null;
-  };
-
-  const handleListenLive = async () => {
+  const handleListenLive = useCallback(async () => {
     setStreamError(false);
     try {
-      // First click: create player
-      if (!audio) {
+      const currentAudio = audioRef.current;
+      if (!currentAudio) {
         const player = new Audio(activeStreamUrl);
-
         player.onplay = () => setIsPlaying(true);
         player.onpause = () => setIsPlaying(false);
         player.onerror = () => {
@@ -104,51 +74,53 @@ export default function Hero() {
           setStreamError(true);
         };
         player.onended = () => {
+          audioRef.current = null;
           setIsPlaying(false);
           setAudio(null);
         };
         player.volume = volume;
-
-        await player.play();
-
+        audioRef.current = player;
         setAudio(player);
+        await player.play();
         setIsPlaying(true);
-        setMediaSessionMetadata();
-
         return;
       }
 
-      // Toggle play/pause
-      if (isPlaying) {
-        audio.pause();
+      if (!currentAudio.paused) {
+        currentAudio.pause();
       } else {
-        await audio.play();
+        await currentAudio.play();
       }
     } catch (err) {
       setStreamError(true);
       console.error(err);
     }
-  };
+  }, [activeStreamUrl, volume]);
 
-  const handleStop = () => {
-  if (!audio) return;
-
-  audio.pause();
-  audio.src = "";
-  audio.load();
-
-  setAudio(null);
-  setIsPlaying(false);
-
-  clearMediaSession();
-};
+  const handleStop = useCallback(() => {
+    const currentAudio = audioRef.current;
+    audioRef.current = null;
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.removeAttribute("src");
+      currentAudio.load();
+    }
+    setAudio(null);
+    setIsPlaying(false);
+    setStreamError(false);
+  }, []);
 
   useEffect(() => {
+    let disposed = false;
+    let timeout: ReturnType<typeof setTimeout>;
+
     const loadBroadcast = async () => {
       const [broadcastResult, sourceModeResult] = await Promise.allSettled([
         getBroadcastStatus(),
         getRadioSourceMode(),
       ]);
+      if (disposed) return;
+
       if (broadcastResult.status === "fulfilled") {
         setLiveBroadcast(broadcastResult.value);
       } else {
@@ -159,18 +131,22 @@ export default function Hero() {
       } else {
         console.error("Failed to load radio source mode:", sourceModeResult.reason);
       }
+
+      timeout = setTimeout(loadBroadcast, audio ? 2000 : 10000);
     };
 
-    loadBroadcast();
+    void loadBroadcast();
 
-    const interval = setInterval(loadBroadcast, isPlaying ? 2000 : 10000);
-
-    return () => clearInterval(interval);
-  }, [isPlaying]);
+    return () => {
+      disposed = true;
+      clearTimeout(timeout);
+    };
+  }, [audio]);
 
   useEffect(() => {
     if (!audio || audio.src === new URL(activeStreamUrl, window.location.href).href) return;
     const wasPlaying = !audio.paused;
+    setStreamError(false);
     audio.pause();
     audio.src = activeStreamUrl;
     audio.load();
@@ -181,6 +157,59 @@ export default function Hero() {
       });
     }
   }, [audio, activeStreamUrl]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+
+    const mediaSession = navigator.mediaSession;
+    if (!audio) {
+      mediaSession.playbackState = "none";
+      mediaSession.metadata = null;
+      mediaSession.setActionHandler("play", null);
+      mediaSession.setActionHandler("pause", null);
+      mediaSession.setActionHandler("stop", null);
+      return;
+    }
+
+    mediaSession.metadata = new MediaMetadata({
+      title: activeSource === "presenter" ? liveBroadcast?.show_title || "iLIZWI Radio" : "iLIZWI Radio",
+      artist: activeSource === "presenter"
+        ? liveBroadcast?.presenter_name || "iLIZWI Radio"
+        : nowPlaying?.artist || "iLIZWI Radio",
+      album: activeSource === "presenter" ? "iLIZWI Radio — Presenter Live" : "iLIZWI Radio",
+      artwork: [
+        { src: "/logo-96.png", sizes: "96x96", type: "image/png" },
+        { src: "/logo-192.png", sizes: "192x192", type: "image/png" },
+        { src: "/logo-256.png", sizes: "256x256", type: "image/png" },
+        { src: "/logo-512.png", sizes: "512x512", type: "image/png" },
+      ],
+    });
+    mediaSession.playbackState = audio.paused ? "paused" : "playing";
+    mediaSession.setActionHandler("play", () => {
+      const currentAudio = audioRef.current;
+      if (currentAudio) {
+        currentAudio.play().catch((error) => {
+          setStreamError(true);
+          console.error("Could not resume the live radio stream:", error);
+        });
+      } else {
+        void handleListenLive();
+      }
+    });
+    mediaSession.setActionHandler("pause", () => audioRef.current?.pause());
+    mediaSession.setActionHandler("stop", handleStop);
+
+    return () => {
+      mediaSession.setActionHandler("play", null);
+      mediaSession.setActionHandler("pause", null);
+      mediaSession.setActionHandler("stop", null);
+    };
+  }, [audio, activeSource, liveBroadcast?.show_title, liveBroadcast?.presenter_name, nowPlaying?.artist, handleListenLive, handleStop]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator) || !audio) return;
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [audio, isPlaying]);
 
   useEffect(() => {
     // Randomize only after mount, once we're safely past hydration.
@@ -196,9 +225,10 @@ export default function Hero() {
   // so audio doesn't keep playing silently in the background.
   useEffect(() => {
     return () => {
-      audio?.pause();
+      audioRef.current?.pause();
+      audioRef.current = null;
     };
-  }, [audio]);
+  }, []);
 
   return (
     <section id="top" className="hero-gradient triangle-bg text-white relative">
@@ -290,9 +320,19 @@ export default function Hero() {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleListenLive}
+                aria-label={!audio ? "Play live radio" : isPlaying ? "Pause live radio" : "Resume live radio"}
                 className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center hover:scale-[1.01] transition-all duration-300"
               >
                 <Icon name={!audio ? "play" : isPlaying ? "pause" : "play"} />
+              </button>
+              <button
+                onClick={handleStop}
+                disabled={!audio}
+                aria-label="Stop live radio"
+                title="Stop"
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <span aria-hidden="true" className="w-2.5 h-2.5 rounded-[2px] bg-current" />
               </button>
               <Icon name="vol" className="w-4 h-4 text-white/60" />
               <input type="range"  min="0"  max="1"  step="0.01" value={volume} onChange={(e) => {
