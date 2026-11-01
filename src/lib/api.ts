@@ -470,6 +470,18 @@ export async function deleteShow(
   return parseShowResponse(response, "Failed to delete show.");
 }
 
+export async function updateShowVisibility(id: string, isVisible: boolean) {
+  const response = await fetch(`${API_URL}/api/shows/${encodeURIComponent(id)}/visibility`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `******"token")}`,
+    },
+    body: JSON.stringify({ isVisible }),
+  });
+  return parseShowResponse(response, "Failed to update show visibility.");
+}
+
 export async function getShows(
   includeHidden = false
 ) {

@@ -15,7 +15,7 @@ export type FieldConfig = {
 
 export type RowAction<T> = {
   label: string;
-  onClick: (item: T) => void;
+  onClick: (item: T) => void | Promise<void>;
   variant?: "default" | "danger";
   /** Hide this action for a given row — e.g. hide "Reset Password" when the
    * presenter has no linked login yet. */
@@ -44,7 +44,7 @@ export default function AdminCollectionEditor<T extends Row>({
   idPrefix: string;
   onAdd: (item: T) => void | Promise<void>;
   onUpdate: (id: string, patch: Partial<T>) => void | Promise<void>;
-  onDelete: (id: string) => void | Promise<void>;
+  onDelete?: (id: string) => void | Promise<void>;
   /** which field(s) to show as the row's primary label in the list */
   columns?: string[];
   /** Optional extra buttons per row, beyond the built-in Edit/Delete —
@@ -58,6 +58,7 @@ export default function AdminCollectionEditor<T extends Row>({
   const [operationError, setOperationError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [runningRowActionId, setRunningRowActionId] = useState<string | null>(null);
 
   const blankForm = () => {
     const blank: Record<string, string | boolean> = {};
@@ -248,8 +249,21 @@ export default function AdminCollectionEditor<T extends Row>({
                 .map((action) => (
                   <button
                     key={action.label}
-                    onClick={() => action.onClick(item)}
-                    className={`text-xs font-semibold flex items-center gap-1 ${
+                    disabled={Boolean(runningRowActionId) || isSaving || Boolean(deletingId)}
+                    onClick={() => {
+                      setRunningRowActionId(item.id);
+                      setOperationError("");
+                      void (async () => {
+                        try {
+                          await action.onClick(item);
+                        } catch (error) {
+                          setOperationError(error instanceof Error ? error.message : `Could not ${action.label.toLowerCase()} this item.`);
+                        } finally {
+                          setRunningRowActionId(null);
+                        }
+                      })();
+                    }}
+                    className={`text-xs font-semibold flex items-center gap-1 disabled:opacity-50 ${
                       action.variant === "danger"
                         ? "text-red-600 hover:text-red-700"
                         : "text-stone-600 hover:text-stone-900"
@@ -259,11 +273,11 @@ export default function AdminCollectionEditor<T extends Row>({
                   </button>
                 ))}
 
-              <button disabled={Boolean(deletingId) || isSaving} onClick={() => startEdit(item)} className="text-xs font-semibold text-green-800 hover:text-green-900 flex items-center gap-1 disabled:opacity-50">
+              <button disabled={Boolean(deletingId) || Boolean(runningRowActionId) || isSaving} onClick={() => startEdit(item)} className="text-xs font-semibold text-green-800 hover:text-green-900 flex items-center gap-1 disabled:opacity-50">
                 <Icon name="chevron" className="w-3.5 h-3.5" /> Edit
               </button>
-              {!hideDelete && <button
-                disabled={Boolean(deletingId) || isSaving}
+              {!hideDelete && onDelete && <button
+                disabled={Boolean(deletingId) || Boolean(runningRowActionId) || isSaving}
                 onClick={() => {
                   if (!confirm(`Delete "${label(item)}"? This can't be undone.`)) return;
                   setDeletingId(item.id);

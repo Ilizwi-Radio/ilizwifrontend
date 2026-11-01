@@ -5,20 +5,39 @@ import AdminCollectionEditor, { RowAction } from "@/components/AdminCollectionEd
 import {
   assignPrimaryPresenterToShow,
   createShow,
-  deleteShow,
   updateShow,
+  updateShowVisibility,
 } from "@/lib/api";
 import { scheduleFields } from "./adminConfig";
-import { visibilityActions } from "./visibility";
+import { isVisible } from "./visibility";
 
 export default function ShowsManagement({ shows, presenters, refreshShows }: { shows: any[]; presenters: any[]; refreshShows: () => Promise<void> }) {
   const [assigningShow, setAssigningShow] = useState<any | null>(null);
   const [selectedPresenterId, setSelectedPresenterId] = useState("");
   const [assignmentError, setAssignmentError] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
+  const archiveShow = async (show: any) => {
+    if (!confirm(`Archive "${show.title}"? Broadcast history will be preserved, and the show can be restored later.`)) return;
+    await updateShowVisibility(show.id, false);
+    await refreshShows();
+  };
+  const restoreShow = async (show: any) => {
+    await updateShowVisibility(show.id, true);
+    await refreshShows();
+  };
 
   const rowActions: RowAction<any>[] = [
-    ...visibilityActions(updateShow, refreshShows),
+    {
+      label: "Archive",
+      variant: "danger",
+      onClick: archiveShow,
+      hidden: (show) => !isVisible(show),
+    },
+    {
+      label: "Restore",
+      onClick: restoreShow,
+      hidden: (show) => isVisible(show),
+    },
     {
       label: "Set Primary Host",
       onClick: (show) => {
@@ -58,9 +77,9 @@ export default function ShowsManagement({ shows, presenters, refreshShows }: { s
         idPrefix="sched"
         columns={["title", "display_name", "scheduled_start"]}
         rowActions={rowActions}
+        hideDelete
         onAdd={async (item) => { await createShow(item); await refreshAfterMutation("Show created"); }}
         onUpdate={async (id, patch) => { await updateShow(id, patch); await refreshAfterMutation("Show updated"); }}
-        onDelete={async (id) => { await deleteShow(id); await refreshAfterMutation("Show deleted"); }}
       />
 
       {assigningShow && (
