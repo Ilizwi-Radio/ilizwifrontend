@@ -471,11 +471,14 @@ export async function deleteShow(
 }
 
 export async function updateShowVisibility(id: string, isVisible: boolean) {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Please sign in again before changing show visibility.");
+
   const response = await fetch(`${API_URL}/api/shows/${encodeURIComponent(id)}/visibility`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `******"token")}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ isVisible }),
   });
