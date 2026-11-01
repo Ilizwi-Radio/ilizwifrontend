@@ -30,8 +30,10 @@ function formatShow(show: PublicShow) {
   return {
     id: show.id,
     isLive,
-    tag: isLive ? "LIVE" : time,
-    tagColor: isLive ? "bg-red-600" : "bg-black/60",
+    tag: isLive ? "LIVE" : show.tag_label || time,
+    tagColor: isLive ? "#dc2626" : show.tag_color || "#000000",
+    gradientStart: show.gradient_start || "#ea6a10",
+    gradientEnd: show.gradient_end || "#7a2e0f",
     icon: show.presenter_type === "ai" ? "briefcase" : "mic",
     title: show.title,
     description: show.description,
@@ -83,8 +85,14 @@ export default function LiveBroadcasts({ initialShows }: { initialShows: PublicS
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {schedule.map((show) => (
             <article key={show.id} className="bg-white border border-stone-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="h-28 relative flex items-center justify-center bg-gradient-to-br from-orange-600 to-amber-950">
-                <span className={`absolute top-2.5 left-2.5 ${show.tagColor} text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1`}>
+              <div
+                className="h-28 relative flex items-center justify-center"
+                style={{ background: `linear-gradient(135deg, ${show.gradientStart}, ${show.gradientEnd})` }}
+              >
+                <span
+                  className="absolute top-2.5 left-2.5 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"
+                  style={{ backgroundColor: show.tagColor }}
+                >
                   {show.isLive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
                   {show.tag}
                 </span>

@@ -29,17 +29,43 @@ export const HOMEPAGE_SECTIONS = [
 export type TabKey = (typeof TABS)[number]["key"];
 
 export const scheduleFields: FieldConfig[] = [
-  { key: "title", label: "Show Title", placeholder: "Morning Heritage Show" },
-  { key: "host", label: "Host Name", placeholder: "AI Presenter Nala" },
-  { key: "type", label: "Host Type", type: "select", options: ["AI PRESENTER", "LIVE HOST", "VIDEO SHOW"] },
-  { key: "icon", label: "Icon", type: "select", options: ["mic", "video", "briefcase"] },
-  { key: "tag", label: "Time / Tag", placeholder: "e.g. 10:00 or LIVE" },
-  { key: "tagColor", label: "Tag Color Class", placeholder: "bg-black/60 or bg-red-600" },
-  { key: "lang", label: "Language", placeholder: "isiZulu" },
-  { key: "listeners", label: "Listener Count (leave blank if not live)", placeholder: "12,847" },
-  { key: "cta", label: "Button Label", type: "select", options: ["Join Live", "Set Reminder"] },
-  { key: "imgFrom", label: "Gradient Start", type: "color", placeholder: "#ea6a10" },
-  { key: "imgTo", label: "Gradient End", type: "color", placeholder: "#7a2e0f" },
+  { key: "title", label: "Show title", placeholder: "Morning Heritage Show", required: true },
+  { key: "description", label: "Description", type: "textarea", placeholder: "What listeners can expect from this show" },
+  { key: "presenter_id", label: "Primary presenter", type: "select", required: true },
+  {
+    key: "show_type",
+    label: "Show format",
+    type: "select",
+    options: [
+      { label: "Audio", value: "audio" },
+      { label: "Video", value: "video" },
+    ],
+    required: true,
+    defaultValue: "audio",
+  },
+  {
+    key: "language_code",
+    label: "Broadcast language",
+    type: "select",
+    options: [
+      { label: "English", value: "en" },
+      { label: "isiZulu", value: "zu" },
+      { label: "isiXhosa", value: "xh" },
+      { label: "Sesotho", value: "st" },
+      { label: "Setswana", value: "tn" },
+      { label: "itsonga", value: "ts" },
+      { label: "Tshivenda", value: "ve" },
+      { label: "isiNdebele", value: "nr" },
+    ],
+    required: true,
+    defaultValue: "en",
+  },
+  { key: "scheduled_start", label: "Start date and time (local)", type: "datetime-local", required: true },
+  { key: "scheduled_end", label: "End date and time (local)", type: "datetime-local" },
+  { key: "tag_label", label: "Schedule badge (optional)", placeholder: "e.g. Special episode; blank shows the start time" },
+  { key: "tag_color", label: "Schedule badge color", type: "color", defaultValue: "#000000" },
+  { key: "gradient_start", label: "Card gradient - start", type: "color", defaultValue: "#ea6a10" },
+  { key: "gradient_end", label: "Card gradient - end", type: "color", defaultValue: "#7a2e0f" },
 ];
 
 export const languageFields: FieldConfig[] = [

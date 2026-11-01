@@ -9,6 +9,15 @@ function clearExpiredSession() {
   window.dispatchEvent(new Event("storage"));
 }
 
+async function parseShowResponse(response: Response, fallbackMessage: string) {
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (response.status === 401) clearExpiredSession();
+    throw new Error(data?.error || fallbackMessage);
+  }
+  return data;
+}
+
 // console.log("API_URL =", API_URL);
 //=== Videos===//
 export async function createVideo(
@@ -393,7 +402,7 @@ export async function createShow(
     }
   );
 
-  return response.json();
+  return parseShowResponse(response, "Failed to create show.");
 }
 
 export async function updateShow(
@@ -401,7 +410,7 @@ export async function updateShow(
   show: any
 ) {
   const response = await fetch(
-    `${API_URL}/api/shows/${id}`,
+    `${API_URL}/api/shows/${encodeURIComponent(id)}`,
     {
       method: "PUT",
       headers: {
@@ -412,7 +421,7 @@ export async function updateShow(
     }
   );
 
-  return response.json();
+  return parseShowResponse(response, "Failed to update show.");
 }
 
 export async function setShowCohost(showId: string, presenterId: string | null) {
@@ -449,7 +458,7 @@ export async function deleteShow(
   id: string
 ) {
   const response = await fetch(
-    `${API_URL}/api/shows/${id}`,
+    `${API_URL}/api/shows/${encodeURIComponent(id)}`,
     {
       method: "DELETE",
       headers: {
@@ -458,7 +467,7 @@ export async function deleteShow(
     }
   );
 
-  return response.json();
+  return parseShowResponse(response, "Failed to delete show.");
 }
 
 export async function getShows(

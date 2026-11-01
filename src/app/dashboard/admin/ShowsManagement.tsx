@@ -38,20 +38,37 @@ export default function ShowsManagement({ shows, refreshShows }: { shows: any[];
   ];
 
   const linkedPresenters = presenters.filter((presenter) => Boolean(presenter.user_id));
+  const refreshAfterMutation = async (resultLabel: string) => {
+    try {
+      await refreshShows();
+    } catch (error) {
+      const detail = error instanceof Error ? ` ${error.message}` : "";
+      throw new Error(`${resultLabel}, but the show list could not be refreshed.${detail}`);
+    }
+  };
+  const fields = scheduleFields.map((field) => field.key === "presenter_id"
+    ? {
+        ...field,
+        options: linkedPresenters.map((presenter) => ({
+          label: presenter.display_name || presenter.name || presenter.id,
+          value: presenter.id,
+        })),
+      }
+    : field);
 
   return (
     <>
       <AdminCollectionEditor
         title="Live Sessions & Schedule"
-        description="Create and manage station shows. A presenter profile must be linked to a login and assigned as primary host before it can go live."
+        description="Create shows with a linked primary presenter. If no presenter appears, use the Presenters tab to link a login first. You can reassign the host later."
         items={shows}
-        fields={scheduleFields}
+        fields={fields}
         idPrefix="sched"
-        columns={["title", "display_name", "status"]}
+        columns={["title", "display_name", "scheduled_start"]}
         rowActions={rowActions}
-        onAdd={async (item) => { await createShow(item); await refreshShows(); }}
-        onUpdate={async (id, patch) => { await updateShow(id, patch); await refreshShows(); }}
-        onDelete={async (id) => { await deleteShow(id); await refreshShows(); }}
+        onAdd={async (item) => { await createShow(item); await refreshAfterMutation("Show created"); }}
+        onUpdate={async (id, patch) => { await updateShow(id, patch); await refreshAfterMutation("Show updated"); }}
+        onDelete={async (id) => { await deleteShow(id); await refreshAfterMutation("Show deleted"); }}
       />
 
       {assigningShow && (

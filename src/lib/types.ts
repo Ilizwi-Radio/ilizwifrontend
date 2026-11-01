@@ -12,6 +12,10 @@ export interface Show {
 
   scheduled_start: string;
   scheduled_end: string;
+  tag_label?: string | null;
+  tag_color?: string | null;
+  gradient_start?: string | null;
+  gradient_end?: string | null;
 
   status: string;
 

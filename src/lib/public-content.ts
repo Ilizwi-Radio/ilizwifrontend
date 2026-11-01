@@ -10,6 +10,10 @@ export type PublicShow = {
   cohost_display_name?: string | null;
   language_code?: string | null;
   scheduled_start?: string | null;
+  tag_label?: string | null;
+  tag_color?: string | null;
+  gradient_start?: string | null;
+  gradient_end?: string | null;
   status?: string | null;
   is_live?: boolean;
   listener_count?: number | null;
@@ -49,4 +53,3 @@ export async function getPublicHomepageContent() {
   ]);
   return { shows, events };
 }
-
