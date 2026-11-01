@@ -1,29 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import AdminCollectionEditor, { RowAction } from "@/components/AdminCollectionEditor";
 import {
   assignPrimaryPresenterToShow,
   createShow,
   deleteShow,
-  getPresenters,
   updateShow,
 } from "@/lib/api";
 import { scheduleFields } from "./adminConfig";
 import { visibilityActions } from "./visibility";
 
-export default function ShowsManagement({ shows, refreshShows }: { shows: any[]; refreshShows: () => Promise<void> }) {
-  const [presenters, setPresenters] = useState<any[]>([]);
+export default function ShowsManagement({ shows, presenters, refreshShows }: { shows: any[]; presenters: any[]; refreshShows: () => Promise<void> }) {
   const [assigningShow, setAssigningShow] = useState<any | null>(null);
   const [selectedPresenterId, setSelectedPresenterId] = useState("");
   const [assignmentError, setAssignmentError] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
-
-  useEffect(() => {
-    getPresenters()
-      .then((data) => setPresenters(Array.isArray(data) ? data : []))
-      .catch((error) => console.error("Failed to load presenter profiles:", error));
-  }, []);
 
   const rowActions: RowAction<any>[] = [
     ...visibilityActions(updateShow, refreshShows),
@@ -37,7 +29,6 @@ export default function ShowsManagement({ shows, refreshShows }: { shows: any[];
     },
   ];
 
-  const linkedPresenters = presenters.filter((presenter) => Boolean(presenter.user_id));
   const refreshAfterMutation = async (resultLabel: string) => {
     try {
       await refreshShows();
@@ -49,8 +40,9 @@ export default function ShowsManagement({ shows, refreshShows }: { shows: any[];
   const fields = scheduleFields.map((field) => field.key === "presenter_id"
     ? {
         ...field,
-        options: linkedPresenters.map((presenter) => ({
-          label: presenter.display_name || presenter.name || presenter.id,
+        required: false,
+        options: presenters.map((presenter) => ({
+          label: `${presenter.display_name || presenter.name || presenter.id}${presenter.user_id ? "" : " (login not linked)"}`,
           value: presenter.id,
         })),
       }
@@ -60,7 +52,7 @@ export default function ShowsManagement({ shows, refreshShows }: { shows: any[];
     <>
       <AdminCollectionEditor
         title="Live Sessions & Schedule"
-        description="Create shows with a linked primary presenter. If no presenter appears, use the Presenters tab to link a login first. You can reassign the host later."
+        description="A primary presenter is optional when creating a show and can be assigned later. Presenters need a linked login to broadcast."
         items={shows}
         fields={fields}
         idPrefix="sched"
@@ -103,17 +95,22 @@ export default function ShowsManagement({ shows, refreshShows }: { shows: any[];
                 onChange={(event) => setSelectedPresenterId(event.target.value)}
                 className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-green-700"
               >
-                <option value="">Select a linked presenter…</option>
-                {linkedPresenters.map((presenter) => (
+                <option value="">Choose a presenter…</option>
+                {presenters.map((presenter) => (
                   <option key={presenter.id} value={presenter.id}>
-                    {presenter.display_name || presenter.name || presenter.id}
+                    {presenter.display_name || presenter.name || presenter.id}{presenter.user_id ? "" : " (login not linked)"}
                   </option>
                 ))}
               </select>
             </label>
-            {linkedPresenters.length === 0 && (
+            {presenters.length === 0 && (
               <p className="text-amber-700 text-sm">
-                No linked presenter accounts are available. In the Presenters tab, create a profile and use “Link Login” to connect the admin or presenter account first.
+                No presenter profiles are available yet. You can still create this show and assign a presenter later.
+              </p>
+            )}
+            {selectedPresenterId && !presenters.find((presenter) => presenter.id === selectedPresenterId)?.user_id && (
+              <p className="text-amber-700 text-sm">
+                This presenter has no linked login yet and cannot start a broadcast until an account is linked.
               </p>
             )}
             {assignmentError && <p role="alert" className="text-red-600 text-sm">{assignmentError}</p>}

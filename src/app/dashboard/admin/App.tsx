@@ -176,7 +176,7 @@ export default function App({ moderatorMode = false }: { moderatorMode?: boolean
         <TabNav tab={tab} setTab={setTab} showAdminTabs={!moderatorMode} />
 
         <div className="bg-white border border-stone-200 rounded-2xl p-6">
-          {tab === "schedule" && <ShowsManagement shows={shows} refreshShows={refreshShows} />}
+          {tab === "schedule" && <ShowsManagement shows={shows} presenters={presenters} refreshShows={refreshShows} />}
           {tab === "languages" && <LanguagesManagement courses={courses} refreshCourses={refreshCourses} />}
           {tab === "music" && (
             <MusicManagement songs={songs} refreshSongs={refreshSongs} genres={genres} setGenres={setGenres} />
