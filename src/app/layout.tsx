@@ -42,13 +42,18 @@ export const metadata: Metadata = {
     locale: "en_ZA",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "https://www.ilizwiradio.co.za/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "iLIZWI Radio",
       },
     ],
   },
+  icons: {
+  icon: "/favicon.ico",
+  shortcut: "/favicon.ico",
+  apple: "/apple-touch-icon.png",
+},
 
   twitter: {
     card: "summary_large_image",
@@ -57,6 +62,7 @@ export const metadata: Metadata = {
       "African music, storytelling, language learning and AI-powered broadcasting.",
     images: ["/og-image.jpg"],
   },
+
 
   alternates: {
     canonical: "https://www.ilizwiradio.co.za",
