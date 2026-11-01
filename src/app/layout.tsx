@@ -57,7 +57,7 @@ export const metadata: Metadata = {
 
     images: [
       {
-        url: "https://www.ilizwiradio.co.za/og-image-v2.webp",
+        url: "https://www.ilizwiradio.co.za/og-image-v3.webp",
         width: 1200,
         height: 630,
         alt: "iLIZWI Radio - Where Africa Speaks & The World Learns",
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     site: "@ilizwiradio",
 
     images: [
-      "https://www.ilizwiradio.co.za/og-image-v2.webp",
+      "https://www.ilizwiradio.co.za/og-image-v3.webp",
     ],
   },
 
@@ -132,7 +132,7 @@ export default function RootLayout({
               name: "iLIZWI Radio",
               url: "https://www.ilizwiradio.co.za",
               logo: "https://www.ilizwiradio.co.za/logo.png",
-              image: "https://www.ilizwiradio.co.za/og-image-v2.webp",
+              image: "https://www.ilizwiradio.co.za/og-image-v3.webp",
               description:
                 "African music, storytelling, culture, language learning and AI-powered broadcasting.",
               sameAs: [
