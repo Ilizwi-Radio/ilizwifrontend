@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { getCurrentUser, logoutSession } from "@/lib/api";
 
 export type Role =
   | "registered"
@@ -23,7 +24,7 @@ export type AuthUser = {
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => void;
 };
 
@@ -60,17 +61,42 @@ export function AuthProvider({
 
   useEffect(() => {
     refreshUser();
-    setLoading(false);
+    let active = true;
+    getCurrentUser()
+      .then((currentUser) => {
+        if (!active) return;
+        localStorage.setItem("user", JSON.stringify(currentUser));
+        setUser(currentUser);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Error && error.name === "AuthenticationError") {
+          if (!active) return;
+          localStorage.removeItem("user");
+          setUser(null);
+        } else if (error instanceof Error) {
+          console.error("Could not verify the current session:", error);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
     const syncUser = () => refreshUser();
     window.addEventListener("storage", syncUser);
-    return () => window.removeEventListener("storage", syncUser);
+    return () => {
+      active = false;
+      window.removeEventListener("storage", syncUser);
+    };
   }, []);
 
   const logout = () => {
-    localStorage.removeItem("token");
+    const request = logoutSession().catch((error: unknown) => {
+      console.error("Failed to clear the authentication cookie:", error);
+    });
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     setUser(null);
     window.dispatchEvent(new Event("storage"));
+    return request;
   };
 
   return (

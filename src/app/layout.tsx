@@ -3,6 +3,7 @@ import "./globals.css";
 
 import { AuthProvider } from "@/lib/auth";
 import { DataStoreProvider } from "@/lib/store";
+import CookieNotice from "@/components/CookieNotice";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.ilizwiradio.co.za"),
@@ -122,6 +123,7 @@ export default function RootLayout({
             {children}
           </DataStoreProvider>
         </AuthProvider>
+        <CookieNotice />
            <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

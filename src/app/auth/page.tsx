@@ -40,11 +40,7 @@ export default function AuthPage() {
         loginPassword
       );
 
-      localStorage.setItem(
-        "token",
-        result.token
-      );
-
+      localStorage.removeItem("token");
       localStorage.setItem(
         "user",
         JSON.stringify(result.user)

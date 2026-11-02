@@ -2,6 +2,28 @@ import { Show, Presenter, MusicTrack, SoundEffect } from './types';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL;
 
+export function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  // Keep legacy localStorage bearer tokens out of normal API requests.
+  headers.delete("Authorization");
+  const request = globalThis.fetch(input, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
+  return request.then((response) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (
+      response.status === 401 &&
+      !url.includes("/api/auth/login") &&
+      !url.includes("/api/auth/register")
+    ) {
+      clearExpiredSession();
+    }
+    return response;
+  });
+}
+
 function clearExpiredSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem("token");
@@ -23,7 +45,7 @@ async function parseShowResponse(response: Response, fallbackMessage: string) {
 export async function createVideo(
   video: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/videos`,
     {
       method: "POST",
@@ -42,7 +64,7 @@ export async function updateVideo(
   id: string,
   video: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/videos/${id}`,
     {
       method: "PUT",
@@ -59,7 +81,7 @@ export async function updateVideo(
 export async function deleteVideo(
   id: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/videos/${id}`,
     {
       method: "DELETE",
@@ -75,7 +97,7 @@ export async function deleteVideo(
 export async function getVideos(
   includeHidden = false
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/videos${includeHidden ? "/admin" : ""}`,
     includeHidden
       ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
@@ -88,7 +110,7 @@ export async function getVideos(
 export async function createSong(
   song: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/songs`,
     {
       method: "POST",
@@ -107,7 +129,7 @@ export async function updateSong(
   id: string,
   song: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/songs/${id}`,
     {
       method: "PUT",
@@ -125,7 +147,7 @@ export async function updateSong(
 export async function deleteSong(
   id: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/songs/${id}`,
     {
       method: "DELETE",
@@ -141,7 +163,7 @@ export async function deleteSong(
 export async function getSongs(
   includeHidden = false
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/songs${includeHidden ? "?includeHidden=true" : ""}`,
     includeHidden
       ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
@@ -154,7 +176,7 @@ export async function getSongs(
 export async function createEvent(
   event: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/events`,
     {
       method: "POST",
@@ -172,7 +194,7 @@ export async function updateEvent(
   id: string,
   event: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/events/${id}`,
     {
       method: "PUT",
@@ -189,7 +211,7 @@ export async function updateEvent(
 export async function deleteEvent(
   id: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/events/${id}`,
     {
       method: "DELETE",
@@ -205,7 +227,7 @@ export async function deleteEvent(
 export async function getEvents(
   includeHidden = false
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/events${includeHidden ? "?includeHidden=true" : ""}`,
     includeHidden
       ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
@@ -216,7 +238,7 @@ export async function getEvents(
 }
 
 export async function getCareers() {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/careers`
   );
 
@@ -224,7 +246,7 @@ export async function getCareers() {
 }
 
 export async function getPresenters() {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/presenters`
   );
 
@@ -236,7 +258,7 @@ export function getUploadedPresenterPhotoUrl(id: string) {
 }
 
 export async function setPresenterPhotoUrl(id: string, photoUrl: string) {
-  const response = await fetch(`${API_URL}/api/presenters/${encodeURIComponent(id)}/photo-url`, {
+  const response = await apiFetch(`${API_URL}/api/presenters/${encodeURIComponent(id)}/photo-url`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -264,7 +286,7 @@ export async function uploadPresenterPhoto(id: string, file: File) {
     reader.readAsDataURL(file);
   });
 
-  const response = await fetch(`${API_URL}/api/presenters/${encodeURIComponent(id)}/photo`, {
+  const response = await apiFetch(`${API_URL}/api/presenters/${encodeURIComponent(id)}/photo`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -278,7 +300,7 @@ export async function uploadPresenterPhoto(id: string, file: File) {
 }
 
 export async function assignPrimaryPresenterToShow(showId: string, presenterId: string) {
-  const response = await fetch(`${API_URL}/api/admin/shows/${encodeURIComponent(showId)}/assign`, {
+  const response = await apiFetch(`${API_URL}/api/admin/shows/${encodeURIComponent(showId)}/assign`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -292,7 +314,7 @@ export async function assignPrimaryPresenterToShow(showId: string, presenterId: 
 }
 
 export async function getMyPresenterProfile() {
-  const response = await fetch(`${API_URL}/api/presenters/me/profile`, {
+  const response = await apiFetch(`${API_URL}/api/presenters/me/profile`, {
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
   });
   const data = await response.json();
@@ -305,7 +327,7 @@ export async function getMyPresenterProfile() {
 }
 
 export async function updateMyPresenterProfile(profile: { presenter_type: string; bio: string }) {
-  const response = await fetch(`${API_URL}/api/presenters/me/profile`, {
+  const response = await apiFetch(`${API_URL}/api/presenters/me/profile`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -325,7 +347,7 @@ export async function updateMyPresenterProfile(profile: { presenter_type: string
 export async function createCourse(
   course: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/language/courses`,
     {
       method: "POST",
@@ -344,7 +366,7 @@ export async function updateCourse(
   id: string,
   course: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/language/courses/${id}`,
     {
       method: "PUT",
@@ -361,7 +383,7 @@ export async function updateCourse(
 export async function deleteCourse(
   id: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/language/courses/${id}`,
     {
       method: "DELETE",
@@ -376,7 +398,7 @@ export async function deleteCourse(
 export async function getCourses(
   includeHidden = false
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/language/courses${includeHidden ? "?includeHidden=true" : ""}`,
     includeHidden
       ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
@@ -390,7 +412,7 @@ export async function getCourses(
 export async function createShow(
   show: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/shows`,
     {
       method: "POST",
@@ -409,7 +431,7 @@ export async function updateShow(
   id: string,
   show: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/shows/${encodeURIComponent(id)}`,
     {
       method: "PUT",
@@ -425,7 +447,7 @@ export async function updateShow(
 }
 
 export async function setShowCohost(showId: string, presenterId: string | null) {
-  const response = await fetch(`${API_URL}/api/shows/${showId}/cohost`, {
+  const response = await apiFetch(`${API_URL}/api/shows/${showId}/cohost`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -439,7 +461,7 @@ export async function setShowCohost(showId: string, presenterId: string | null) 
 }
 
 export async function getCohostConnectionToken(showId: string) {
-  const response = await fetch(`${API_URL}/api/shows/${showId}/cohost-token`, {
+  const response = await apiFetch(`${API_URL}/api/shows/${showId}/cohost-token`, {
     headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
   });
   const data = await response.json();
@@ -457,7 +479,7 @@ export async function getCohostConnectionToken(showId: string) {
 export async function deleteShow(
   id: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/shows/${encodeURIComponent(id)}`,
     {
       method: "DELETE",
@@ -471,14 +493,10 @@ export async function deleteShow(
 }
 
 export async function updateShowVisibility(id: string, isVisible: boolean) {
-  const token = localStorage.getItem("token");
-  if (!token) throw new Error("Please sign in again before changing show visibility.");
-
-  const response = await fetch(`${API_URL}/api/shows/${encodeURIComponent(id)}/visibility`, {
+  const response = await apiFetch(`${API_URL}/api/shows/${encodeURIComponent(id)}/visibility`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ isVisible }),
   });
@@ -488,7 +506,7 @@ export async function updateShowVisibility(id: string, isVisible: boolean) {
 export async function getShows(
   includeHidden = false
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/shows${includeHidden ? "?includeHidden=true" : ""}`,
     includeHidden
       ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
@@ -509,7 +527,7 @@ export async function login(
   email: string,
   password: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/auth/login`,
     {
       method: "POST",
@@ -536,10 +554,43 @@ export async function login(
 
   return data;
 }
+
+export async function getCurrentUser() {
+  const legacyToken = localStorage.getItem("token");
+  const response = await globalThis.fetch(`${API_URL}/api/auth/me`, {
+    credentials: "include",
+    headers: legacyToken ? { Authorization: `Bearer ${legacyToken}` } : undefined,
+    cache: "no-store",
+  });
+  const data = await response.json().catch(() => null);
+  if (response.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    const error = new Error(data?.error || "Authentication required.");
+    error.name = "AuthenticationError";
+    throw error;
+  }
+  if (!response.ok || !data?.user) {
+    throw new Error(data?.error || "Could not verify the current session.");
+  }
+  localStorage.removeItem("token");
+  return data.user;
+}
+
+export async function logoutSession() {
+  const response = await apiFetch(`${API_URL}/api/auth/logout`, {
+    method: "POST",
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.error || "Could not end the session.");
+  }
+  return data;
+}
 export async function register(
   userData: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/auth/register`,
     {
       method: "POST",
@@ -581,7 +632,7 @@ export async function likeSong(
     );
 
   const response =
-    await fetch(
+    await apiFetch(
       `${API_URL}/api/songs/${songId}/like`,
       {
         method: "POST",
@@ -610,7 +661,7 @@ export async function registerForEvent(
   const token =
     localStorage.getItem("token");
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/events/${eventId}/register`,
     {
       method: "POST",
@@ -648,7 +699,7 @@ export async function followPresenter(
   const token =
     localStorage.getItem("token");
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/presenters/${presenterId}/follow`,
     {
       method: "POST",
@@ -666,7 +717,7 @@ export async function unfollowPresenter(
   const token =
     localStorage.getItem("token");
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/presenters/${presenterId}/follow`,
     {
       method: "DELETE",
@@ -682,7 +733,7 @@ export async function unfollowPresenter(
 export async function createOpportunity(
   opportunity: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/opportunities`,
     {
       method: "POST",
@@ -701,7 +752,7 @@ export async function updateOpportunity(
   id: string,
   opportunity: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/opportunities/${id}`,
     {
       method: "PUT",
@@ -719,7 +770,7 @@ export async function updateOpportunity(
 export async function deleteOpportunity(
   id: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/opportunities/${id}`,
     {
       method: "DELETE",
@@ -734,7 +785,7 @@ export async function deleteOpportunity(
 export async function getOpportunities(
   includeHidden = false
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/opportunities${includeHidden ? "?includeHidden=true" : ""}`,
     includeHidden
       ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
@@ -746,7 +797,7 @@ export async function getOpportunities(
 
 //=== Site Settings ===//
 export async function getSiteSettings() {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/site-settings`,
     { cache: "no-store" }
   );
@@ -761,7 +812,7 @@ export async function getSiteSettings() {
 export async function updateSiteSettings(
   settings: any
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/site-settings`,
     {
       method: "PUT",
@@ -782,7 +833,7 @@ export async function updateSiteSettings(
 
 //=== Applications ===//
 export async function getApplications() {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/applications`
   );
 
@@ -794,7 +845,7 @@ export async function getNotifications() {
   const token =
     localStorage.getItem("token");
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/notifications`,
     {
       headers: {
@@ -810,7 +861,7 @@ export async function getNotifications() {
 
 export async function getPlaylists() {
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/playlists`
   );
 
@@ -820,7 +871,7 @@ export async function getPlaylists() {
 
 export async function getAIPresenters() {
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/ai-presenters`
   );
 
@@ -832,7 +883,7 @@ export async function createPresenter(
   presenter: any
 ) {
   const response =
-    await fetch(
+    await apiFetch(
       `${API_URL}/api/presenters`,
       {
         method: "POST",
@@ -857,7 +908,7 @@ export async function updatePresenter(
 ) {
 
   const response =
-    await fetch(
+    await apiFetch(
       `${API_URL}/api/presenters/${id}`,
       {
         method: "PUT",
@@ -881,7 +932,7 @@ export async function deletePresenter(
 ) {
 
   const response =
-    await fetch(
+    await apiFetch(
       `${API_URL}/api/presenters/${id}`,
       {
         method: "DELETE",
@@ -898,7 +949,7 @@ export async function resetPresenterPassword(
   id: string,
   newPassword: string | null
 ): Promise<{ temporaryPassword?: string }> {
-  const response = await fetch(`${API_URL}/api/admin/presenters/${id}/reset-password`, {
+  const response = await apiFetch(`${API_URL}/api/admin/presenters/${id}/reset-password`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -912,7 +963,7 @@ export async function resetPresenterPassword(
 }
 
 export async function linkPresenterAccount(id: string, email: string) {
-  const response = await fetch(`${API_URL}/api/admin/presenters/${id}/link-account`, {
+  const response = await apiFetch(`${API_URL}/api/admin/presenters/${id}/link-account`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -926,7 +977,7 @@ export async function linkPresenterAccount(id: string, email: string) {
 }
 
 export async function getAdminUsers() {
-  const response = await fetch(`${API_URL}/api/admin/users`, {
+  const response = await apiFetch(`${API_URL}/api/admin/users`, {
     headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
     cache: "no-store",
   });
@@ -936,7 +987,7 @@ export async function getAdminUsers() {
 }
 
 export async function updateManagedUserRole(id: string, role: string) {
-  const response = await fetch(`${API_URL}/api/admin/users/${encodeURIComponent(id)}/role`, {
+  const response = await apiFetch(`${API_URL}/api/admin/users/${encodeURIComponent(id)}/role`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -950,7 +1001,7 @@ export async function updateManagedUserRole(id: string, role: string) {
 }
 
 export async function setManagedUserActive(id: string, isActive: boolean) {
-  const response = await fetch(`${API_URL}/api/admin/users/${encodeURIComponent(id)}/status`, {
+  const response = await apiFetch(`${API_URL}/api/admin/users/${encodeURIComponent(id)}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -964,7 +1015,7 @@ export async function setManagedUserActive(id: string, isActive: boolean) {
 }
 
 export async function deleteManagedUser(id: string) {
-  const response = await fetch(`${API_URL}/api/admin/users/${encodeURIComponent(id)}`, {
+  const response = await apiFetch(`${API_URL}/api/admin/users/${encodeURIComponent(id)}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
@@ -983,7 +1034,7 @@ export async function startBroadcast(
   showId: string,
   streamUrl: string 
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/broadcast/start`,
     {
       method: "POST",
@@ -1007,7 +1058,7 @@ export async function startBroadcast(
 export async function stopBroadcast(
   broadcastId: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/broadcast/${broadcastId}/stop`,
     {
       method: "POST",
@@ -1022,7 +1073,7 @@ export async function stopBroadcast(
 
 
 export async function getBroadcastStatus() {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/broadcast/status`,
     { cache: "no-store" }
   );
@@ -1039,7 +1090,7 @@ export async function getBroadcastStatus() {
 }
 
 export async function getBroadcastRelayToken(showId: string): Promise<string> {
-  const response = await fetch(`${API_URL}/api/broadcast/relay-token?showId=${encodeURIComponent(showId)}`, {
+  const response = await apiFetch(`${API_URL}/api/broadcast/relay-token?showId=${encodeURIComponent(showId)}`, {
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
     },
@@ -1055,7 +1106,7 @@ export async function updateListenerCount(
   broadcastId: string,
   listenerCount: number
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/broadcast/${broadcastId}/listeners`,
     {
       method: "PUT",
@@ -1075,7 +1126,7 @@ export async function playBroadcastContent(
   broadcastId: string,
   contentId: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/broadcast/${broadcastId}/content`,
     {
       method: "POST",
@@ -1095,7 +1146,7 @@ export async function playBroadcastContent(
 export async function clearBroadcastContent(
   broadcastId: string
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/broadcast/${broadcastId}/content`,
     {
       method: "POST",
@@ -1144,7 +1195,7 @@ function setStored<T>(key: string, value: T): void {
 /// ==== MusicTrack Getting From Database ====== ////
 
 export async function getMusicTracks(): Promise<MusicTrack[]> {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/music-tracks`
   );
    if (!response.ok) {
@@ -1172,7 +1223,7 @@ export async function addMusicTrack(
 ) {
   const token = localStorage.getItem("token");
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/music-tracks`,
     {
       method: "POST",
@@ -1188,7 +1239,7 @@ export async function addMusicTrack(
 }
 
 export async function deleteMusicTrack(id: string) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/music-tracks/${id}`,
     {
       method: "DELETE",
@@ -1203,7 +1254,7 @@ export async function deleteMusicTrack(id: string) {
 
 //==== Getting Number of Listeners ====///
 export async function getIcecastStatus() {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_URL}/api/icecast/status`
   );
 

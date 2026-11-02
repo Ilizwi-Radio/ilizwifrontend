@@ -31,8 +31,7 @@ export default function DashboardHeader({ title, subtitle }: { title: string; su
           )}
           <button
             onClick={() => {
-              logout();
-              window.location.replace("/");
+              void logout().finally(() => window.location.replace("/"));
             }}
             className="text-sm bg-orange-500 hover:bg-orange-600 rounded-full px-4 py-2 font-semibold"
           >

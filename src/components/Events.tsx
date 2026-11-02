@@ -5,6 +5,7 @@ import Icon from "./Icon";
 import FadeIn from "./FadeIn";
 import { getEvents, registerForEvent } from "@/lib/api";
 import type { PublicEvent } from "@/lib/public-content";
+import { useAuth } from "@/lib/auth";
 
 function formatEvent(event: PublicEvent) {
   const date = event.start_at ? new Date(event.start_at) : null;
@@ -28,11 +29,11 @@ function formatEvent(event: PublicEvent) {
 }
 
 export default function Events({ initialEvents }: { initialEvents: PublicEvent[] }) {
+  const { user } = useAuth();
   const [events, setEvents] = useState(() => initialEvents.map(formatEvent));
 
   const handleRegister = async (eventId: string) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!user) {
       alert("Please log in to register for events.");
       return;
     }

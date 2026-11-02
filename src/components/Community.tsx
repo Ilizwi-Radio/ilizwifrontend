@@ -3,8 +3,10 @@ import Icon from "./Icon";
 import FadeIn from "./FadeIn";
 import { getPresenters, getUploadedPresenterPhotoUrl, followPresenter, unfollowPresenter } from "@/lib/api";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
 
 export default function Community({ showStats = true }: { showStats?: boolean }) {
+  const { user } = useAuth();
   const [presenters, setPresenters] =
   useState<any[]>([]);
   useEffect(() => {
@@ -51,10 +53,7 @@ const handleFollow = async (
   presenterId: string
 ) => {
 
-  const token =
-    localStorage.getItem("token");
-
-  if (!token) {
+  if (!user) {
 
     alert(
       "Please login first."

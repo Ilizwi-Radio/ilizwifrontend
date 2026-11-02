@@ -117,10 +117,10 @@ export default function AuthModal({
 
           <button
             onClick={() => {
-              logout();
-              onClose();
-              router.replace("/");
-
+              void logout().finally(() => {
+                onClose();
+                router.replace("/");
+              });
             }}
             className="w-full bg-red-500 text-white rounded-xl py-3"
           >
@@ -154,22 +154,13 @@ export default function AuthModal({
         loginPassword
       );
 
-      if (
-        !result.token ||
-        !result.user
-      ) {
+      if (!result.user) {
         throw new Error(
           "Authentication failed"
         );
       }
 
-
-      // console.log("LOGIN RESPONSE:", result);
-
-      localStorage.setItem(
-        "token",
-        result.token
-      );
+      localStorage.removeItem("token");
 
       localStorage.setItem(
         "user",

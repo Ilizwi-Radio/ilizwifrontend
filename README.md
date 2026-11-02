@@ -84,6 +84,13 @@ Open [http://localhost:3000](http://localhost:3000).
 | `TURN_SHARED_SECRET` | Backend, optional | Private coturn REST secret used to issue temporary TURN credentials. |
 | `GEMINI_API_KEY` | Backend | Optional key for AI presenter features. |
 
+## Authentication and cookies
+
+- Successful sign-in stores the seven-day JWT in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie scoped to the API host and `/api` path. Browser API requests use credentialed CORS from the exact origins in `CORS_ORIGINS`.
+- Existing localStorage sessions are exchanged for the cookie on the next session check, then the frontend removes the old token.
+- The site displays a notice for this essential sign-in cookie. It does not use advertising or analytics cookies; YouTube embeds may use YouTube's own technologies when played.
+- Unsafe browser requests with an `Origin` header are restricted to the configured site origins.
+
 ## Project layout
 
 ```text

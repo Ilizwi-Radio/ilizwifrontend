@@ -1,3 +1,5 @@
+import { apiFetch } from "@/lib/api";
+
 export type RadioSourceMode = "auto" | "zeno" | "presenter";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -7,7 +9,7 @@ export function isRadioSourceMode(value: unknown): value is RadioSourceMode {
 }
 
 export async function getRadioSourceMode(): Promise<RadioSourceMode> {
-  const response = await fetch(`${API_URL}/api/radio-source`, { cache: "no-store" });
+  const response = await apiFetch(`${API_URL}/api/radio-source`, { cache: "no-store" });
   const data = await response.json();
   if (!response.ok || !isRadioSourceMode(data.mode)) {
     throw new Error(data.error || "Failed to load radio source mode.");
@@ -16,7 +18,7 @@ export async function getRadioSourceMode(): Promise<RadioSourceMode> {
 }
 
 export async function updateRadioSourceMode(mode: RadioSourceMode): Promise<RadioSourceMode> {
-  const response = await fetch(`${API_URL}/api/radio-source`, {
+  const response = await apiFetch(`${API_URL}/api/radio-source`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

@@ -37,8 +37,7 @@ export default function DashboardHeader({
           <button
             type="button"
             onClick={() => {
-              logout();
-              window.location.replace('/');
+              void logout().finally(() => window.location.replace('/'));
             }}
             className="text-sm text-stone-600 hover:text-red-700 transition"
           >
