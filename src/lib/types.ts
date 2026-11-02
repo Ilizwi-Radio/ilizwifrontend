@@ -75,7 +75,7 @@ export interface StationSong {
 export interface SongArtist {
   id: string;
   name: string;
-  country?: string | null;
+  country: string;
 }
 
 export type BroadcastQueueItemType = "song" | "jingle" | "advert";

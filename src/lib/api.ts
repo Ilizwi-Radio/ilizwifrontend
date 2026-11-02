@@ -199,6 +199,20 @@ export async function getSongArtists(): Promise<SongArtist[]> {
   return data;
 }
 
+export async function createSongArtist(input: {
+  name: string;
+  country: string;
+}): Promise<SongArtist> {
+  const response = await apiFetch(`${API_URL}/api/songs/artists`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not create this artist.");
+  return data;
+}
+
 export async function createSongAudioUploadUrl(file: File): Promise<{
   objectKey: string;
   uploadUrl: string;
