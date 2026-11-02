@@ -87,14 +87,9 @@ export const metadata: Metadata = {
         sizes: "any",
       },
       {
-        url: "/favicon-32x32.svg",
-        sizes: "any", 
-        type: "image/svg+xml"
-      },
-      {
-        url: "/favicon-32x32.png",
+        url: "/icon.png",
         type: "image/png",
-        sizes: "32x32",
+        sizes: "192x192",
       },
     ],
 
@@ -105,7 +100,6 @@ export const metadata: Metadata = {
       },
     ],
 
-    shortcut: ["/favicon.ico"],
   },
 
   manifest: "/site.webmanifest",
