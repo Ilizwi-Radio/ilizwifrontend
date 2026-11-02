@@ -461,15 +461,21 @@ class AudioEngine {
     }
   }
 
-  public playCustomAudioUrl(url: string, trackId: string, onEnded?: () => void) {
+  public playCustomAudioUrl(
+    url: string,
+    trackId: string,
+    onEnded?: () => void,
+    onError?: () => void
+  ) {
     this.stopMusic();
     const ctx = this.getContext();
 
     this.activeTrackId = trackId;
     this.isMusicPlaying = true;
 
-    this.audioElement = new Audio(url);
+    this.audioElement = new Audio();
     this.audioElement.crossOrigin = 'anonymous';
+    this.audioElement.src = url;
     this.audioElement.volume = this.baseMusicVolume;
 
     // Route uploaded/custom tracks through the same music bus (ducking + broadcast)
@@ -484,9 +490,19 @@ class AudioEngine {
       this.activeTrackId = null;
       if (onEnded) onEnded();
     };
+    let playbackFailed = false;
+    const handlePlaybackError = () => {
+      if (playbackFailed) return;
+      playbackFailed = true;
+      this.isMusicPlaying = false;
+      this.activeTrackId = null;
+      onError?.();
+    };
+    this.audioElement.onerror = handlePlaybackError;
 
     this.audioElement.play().catch((err) => {
       console.warn('Audio play prevented:', err);
+      handlePlaybackError();
     });
   }
 

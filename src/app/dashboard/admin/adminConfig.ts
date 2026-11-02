@@ -80,12 +80,11 @@ export const languageFields: FieldConfig[] = [
 ];
 
 export const musicFields: FieldConfig[] = [
-  { key: "title", label: "Track Title", placeholder: "Soweto Sunrise" },
-  { key: "artist", label: "Artist", placeholder: "Thandi Khumalo" },
-  { key: "tag", label: "Genre", placeholder: "Amapiano" },
-  { key: "plays", label: "Play Count", placeholder: "2.4M" },
-  { key: "from", label: "Gradient Start", type: "color", placeholder: "#8a6d1a" },
-  { key: "to", label: "Gradient End", type: "color", placeholder: "#3a2c08" },
+  { key: "title", label: "Track Title", placeholder: "Soweto Sunrise", required: true },
+  { key: "artist_id", label: "Artist", type: "select", required: true },
+  { key: "genre", label: "Genre", placeholder: "Amapiano", required: true },
+  { key: "language_code", label: "Language code", placeholder: "zu", required: true },
+  { key: "duration_seconds", label: "Duration in seconds", placeholder: "210", required: true },
 ];
 
 export const videoFields: FieldConfig[] = [

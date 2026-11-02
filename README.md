@@ -9,7 +9,9 @@ iLIZWI Radio is a Next.js website and Express API for an online radio station. T
 - Admin tools for managing station content and presenters.
 - YouTube-hosted Video Hub: content managers add YouTube links and metadata; visitors search and filter the catalog, then watch videos embedded from YouTube. Video files are not uploaded to the iLIZWI VPS.
 - Presenter tools for profiles, shows, music, live broadcasting, and recording audio locally in the browser for download.
+- PostgreSQL song metadata with audio files stored in private Cloudflare R2 storage; presenters can search and queue songs, jingles, and adverts for a show.
 - Live presenter audio is sent to the relay in 100 ms MediaRecorder chunks; the public player checks for live-source changes every 2 seconds while playing.
+- If a presenter unexpectedly disconnects, the backend can continue the active broadcast queue through FFmpeg and Icecast. This is queue failover, not yet a full 24/7 Auto-DJ.
 - Remote co-hosting lets one assigned co-host join a show's live audio from another location; the primary presenter remains the only station-stream host.
 - Express API backed by PostgreSQL when configured.
 
@@ -83,6 +85,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `CORS_ORIGINS` | Backend | Comma-separated exact site origins allowed to call the API. |
 | `ICECAST_HOST`, `ICECAST_PORT`, `ICECAST_MOUNT`, `ICECAST_SOURCE_PASSWORD`, `ICECAST_BITRATE` | Backend | Icecast source connection used for presenter broadcasts. |
 | `ICECAST_PUBLIC_URL` | Backend | Public Icecast server URL used by the status endpoint. |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | Backend | Private Cloudflare R2 S3-compatible access for station audio uploads and playback. Never expose R2 credentials to the frontend. |
 | `TURN_URLS` | Backend, optional | TURN server URLs for remote co-host connections when direct peer connections are blocked. |
 | `TURN_SHARED_SECRET` | Backend, optional | Private coturn REST secret used to issue temporary TURN credentials. |
 | `GEMINI_API_KEY` | Backend | Optional key for AI presenter features. |
@@ -101,6 +104,14 @@ Open [http://localhost:3000](http://localhost:3000).
 3. Visitors can search and filter visible videos on the homepage. Playback opens an embedded player hosted by YouTube.
 
 The API extracts and validates the YouTube video ID. Categories use the existing `video_categories` table; videos remain in the existing `videos` table. No YouTube API key or VPS video upload is required. Apply `Backend/migrations/005_youtube_hosted_videos.sql` to the existing PostgreSQL database before deploying the matching backend. Legacy non-YouTube video records remain manageable in the admin catalog but are not shown publicly until given a valid YouTube link.
+
+## Music storage and broadcast queue
+
+Song, artist, genre, language, and duration metadata remain in the existing PostgreSQL `songs` and `artists` tables. Audio bytes are uploaded directly to a private Cloudflare R2 bucket using short-lived signed URLs; the backend creates signed playback URLs and FFmpeg reads the same private objects during queue failover. Configure `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_BUCKET_NAME` in `Backend/.env`. R2 credentials are backend-only.
+
+The presenter studio searches the catalog by title, artist, genre, or language and queues each selected item as a song, jingle, or advert. Apply `Backend/migrations/006_broadcast_music_queue.sql` after the existing station schema is provisioned. The queue is scoped to a show and persisted in PostgreSQL. If the presenter relay disconnects unexpectedly, the backend resumes the current item from its beginning and continues queued items on the Icecast mount. Reconnecting a presenter hands the mount back to the normal live relay. Explicitly stopping the broadcast or ending the queue stops fallback playback; an empty queue is not an always-on Auto-DJ.
+
+The R2 bucket must remain private and allow browser CORS requests from the deployed site origins: `GET` and `PUT` methods with the `Content-Type` request header. The upload form accepts audio files up to 100 MB. Verify the migration, R2 credentials, and bucket CORS policy before enabling the presenter queue in production.
 
 ## Site icons and sharing
 

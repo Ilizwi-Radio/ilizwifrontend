@@ -5,6 +5,7 @@ import { audioEngine } from '@/lib/audioEngine';
 import { getShows, getMusicTracks, SOUND_EFFECTS, addMusicTrack, getBroadcastRelayToken, getMyPresenterProfile } from '@/lib/api';
 import { startBroadcast, stopBroadcast, getBroadcastStatus, updateListenerCount, playBroadcastContent,clearBroadcastContent, getIcecastStatus,} from '@/lib/api';
 import VoiceVisualizer from './VoiceVisualizer';
+import BroadcastQueuePanel from './BroadcastQueuePanel';
 import CohostLink from './CohostLink';
 import { useAuth } from '@/lib/auth';
 import {
@@ -103,6 +104,7 @@ export default function PresenterStudio({
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [activeTrack, setActiveTrack] = useState<MusicTrack | null>(null);
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
+  const [isQueuePlaying, setIsQueuePlaying] = useState(false);
   const [musicVolume, setMusicVolume] = useState(0.7);
 
   // Add Music Modal
@@ -447,6 +449,7 @@ useEffect(() => {
 
   // Music Playback
   const handlePlayMusic = async (track: MusicTrack) => {
+    if (isQueuePlaying) return;
     setActiveTrack(track);
     console.log("TRACK ID:", track.id);
     console.log("BROADCAST ID:", broadcastId);
@@ -941,6 +944,7 @@ useEffect(() => {
               ) : (
                 <button
                   onClick={() => activeTrack && handlePlayMusic(activeTrack)}
+                  disabled={isQueuePlaying}
                   className="bg-emerald-600 hover:bg-emerald-500 text-white p-3 rounded-xl shadow-lg transition"
                   title="Play Music"
                 >
@@ -1005,6 +1009,7 @@ useEffect(() => {
                     ) : (
                       <button
                         onClick={() => handlePlayMusic(track)}
+                        disabled={isQueuePlaying}
                         className="p-1.5 rounded-lg bg-stone-800 hover:bg-emerald-600 text-stone-300 hover:text-white text-xs flex items-center gap-1 font-semibold transition"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" /> Play
@@ -1015,6 +1020,21 @@ useEffect(() => {
               );
             })}
           </div>
+          {selectedShowId ? (
+            <BroadcastQueuePanel
+              showId={selectedShowId}
+              canPlay={isBroadcasting && streamStatus === 'live'}
+              onPlaybackStart={() => {
+                setIsPlayingMusic(false);
+                setActiveTrack(null);
+              }}
+              onPlaybackStateChange={setIsQueuePlaying}
+            />
+          ) : (
+            <p className="rounded-xl border border-stone-800 bg-stone-950/70 p-4 text-xs text-stone-400">
+              Select a show to search the station library and manage its broadcast queue.
+            </p>
+          )}
         </div>
 
         {/* SOUNDBOARD FX & LIVE CHAT (5 Cols) */}

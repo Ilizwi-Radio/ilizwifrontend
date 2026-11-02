@@ -36,6 +36,7 @@ export default function AdminCollectionEditor<T extends Row>({
   columns = ["title", "name"],
   rowActions,
   hideDelete = false,
+  hideAdd = false,
 }: {
   title: string;
   description?: string;
@@ -51,6 +52,7 @@ export default function AdminCollectionEditor<T extends Row>({
    * e.g. "Reset Password", "Link Account". */
   rowActions?: RowAction<T>[];
   hideDelete?: boolean;
+  hideAdd?: boolean;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -146,7 +148,7 @@ export default function AdminCollectionEditor<T extends Row>({
           <h3 className="font-bold text-lg text-green-900">{title}</h3>
           {description && <p className="text-stone-500 text-sm mt-0.5">{description}</p>}
         </div>
-        {!showForm && (
+        {!showForm && !hideAdd && (
           <button
             onClick={startAdd}
             className="bg-green-900 hover:bg-green-800 text-white text-sm font-semibold rounded-lg px-4 py-2 shrink-0"

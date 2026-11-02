@@ -63,6 +63,32 @@ export interface MusicTrack {
   addedAt: string;
 }
 
+export interface StationSong {
+  id: string;
+  title: string;
+  artist: string;
+  genre: string;
+  language_code: string;
+  duration_seconds: number;
+}
+
+export interface SongArtist {
+  id: string;
+  name: string;
+  country?: string | null;
+}
+
+export type BroadcastQueueItemType = "song" | "jingle" | "advert";
+
+export interface BroadcastQueueItem extends StationSong {
+  queueItemId: string;
+  showId: string;
+  songId: string;
+  itemType: BroadcastQueueItemType;
+  status: "queued" | "playing";
+  position: number;
+}
+
 export interface SoundEffect {
   id: string;
   name: string;

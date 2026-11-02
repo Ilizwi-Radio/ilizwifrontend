@@ -1,4 +1,13 @@
-import { Show, Presenter, MusicTrack, SoundEffect } from './types';
+import {
+  Show,
+  Presenter,
+  MusicTrack,
+  SoundEffect,
+  BroadcastQueueItem,
+  BroadcastQueueItemType,
+  SongArtist,
+  StationSong,
+} from './types';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL;
 
@@ -172,6 +181,146 @@ export async function getSongs(
 
   return response.json();
 }
+
+export async function searchStationSongs(search: string): Promise<StationSong[]> {
+  const params = new URLSearchParams();
+  if (search.trim()) params.set("search", search.trim());
+  params.set("hasAudio", "true");
+  const response = await apiFetch(`${API_URL}/api/songs?${params.toString()}`);
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Failed to search the station library.");
+  return data;
+}
+
+export async function getSongArtists(): Promise<SongArtist[]> {
+  const response = await apiFetch(`${API_URL}/api/songs/artists`);
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Failed to load artists.");
+  return data;
+}
+
+export async function createSongAudioUploadUrl(file: File): Promise<{
+  objectKey: string;
+  uploadUrl: string;
+  contentType: string;
+  expiresIn: number;
+}> {
+  const response = await apiFetch(`${API_URL}/api/songs/upload-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contentType: file.type, fileSize: file.size }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not prepare the audio upload.");
+
+  const uploadResponse = await fetch(data.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": data.contentType },
+    body: file,
+  });
+  if (!uploadResponse.ok) {
+    throw new Error(`Cloud audio upload failed (HTTP ${uploadResponse.status}). Check the R2 bucket CORS settings.`);
+  }
+  return data;
+}
+
+export async function createStationSong(song: Record<string, unknown>): Promise<void> {
+  const response = await apiFetch(`${API_URL}/api/songs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(song),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not save song metadata.");
+}
+
+export async function getSongAudioUrl(songId: string): Promise<string> {
+  const response = await apiFetch(`${API_URL}/api/songs/${songId}/audio-url`);
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not load song audio.");
+  return data.audioUrl;
+}
+
+function mapBroadcastQueueItem(item: any): BroadcastQueueItem {
+  return {
+    queueItemId: item.id,
+    showId: item.show_id,
+    songId: item.song_id,
+    itemType: item.item_type,
+    status: item.status,
+    position: Number(item.position),
+    id: item.song_id,
+    title: item.title,
+    artist: item.artist,
+    genre: item.genre,
+    language_code: item.language_code,
+    duration_seconds: Number(item.duration_seconds),
+  };
+}
+
+export async function getBroadcastQueue(showId: string): Promise<BroadcastQueueItem[]> {
+  const response = await apiFetch(`${API_URL}/api/broadcast/queue/${showId}`);
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not load the broadcast queue.");
+  return data.map(mapBroadcastQueueItem);
+}
+
+export async function addBroadcastQueueItem(
+  showId: string,
+  songId: string,
+  itemType: BroadcastQueueItemType
+): Promise<void> {
+  const response = await apiFetch(`${API_URL}/api/broadcast/queue/${showId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ songId, itemType }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not add this song to the queue.");
+}
+
+export async function removeBroadcastQueueItem(showId: string, queueItemId: string): Promise<void> {
+  const response = await apiFetch(
+    `${API_URL}/api/broadcast/queue/${showId}/items/${queueItemId}`,
+    { method: "DELETE" }
+  );
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not remove this queue item.");
+}
+
+export async function playNextBroadcastQueueItem(showId: string): Promise<{
+  item: BroadcastQueueItem | null;
+  audioUrl?: string;
+}> {
+  const response = await apiFetch(`${API_URL}/api/broadcast/queue/${showId}/next`, {
+    method: "POST",
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not start the next queue item.");
+  return {
+    item: data.item ? mapBroadcastQueueItem(data.item) : null,
+    audioUrl: data.audioUrl,
+  };
+}
+
+export async function completeBroadcastQueueItem(showId: string, queueItemId: string): Promise<void> {
+  const response = await apiFetch(
+    `${API_URL}/api/broadcast/queue/${showId}/items/${queueItemId}/complete`,
+    { method: "POST" }
+  );
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not complete the queue item.");
+}
+
+export async function failBroadcastQueueItem(showId: string, queueItemId: string): Promise<void> {
+  const response = await apiFetch(
+    `${API_URL}/api/broadcast/queue/${showId}/items/${queueItemId}/fail`,
+    { method: "POST" }
+  );
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not update the failed queue item.");
+}
+
 // === Events ===//
 export async function createEvent(
   event: any
