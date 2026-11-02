@@ -87,16 +87,15 @@ All suggested endpoints follow the TRD's `/api/v1/...` REST convention (Section 
 
 ## 6. Video Hub — `src/components/VideoHub.tsx`
 
-| # | Feature | File:Line | Current state | TRD Service | Suggested endpoint | Request data | Response data |
+| # | Feature | File:Line | Current state | Service | Endpoint | Request data | Response data |
 |---|---|---|---|---|---|---|---|
-| 6.1 | Video grid | `VideoHub.tsx:3, 26` (data: `videos` in `data.ts`) | 6 static mock videos | Video | `GET /api/v1/videos?category={cat}&page={n}` | Optional `category`, pagination | `{ items: VideoItem[], total: number }` |
-| 6.2 | Category tag pill | `VideoHub.tsx:35-37` | Hardcoded per mock item | Video | included in 6.1 response | — | `category: string` |
-| 6.3 | Bookmark button | `VideoHub.tsx:39-41` | No handler | Video (or User service) | `POST /api/v1/videos/{id}/bookmark` / `DELETE /api/v1/videos/{id}/bookmark` | Auth header | `{ bookmarked: boolean }` |
-| 6.4 | Download button | `VideoHub.tsx:42-44` | No handler | Video (Object/Media Storage) | `GET /api/v1/videos/{id}/download` | Auth header (if download is a paid/gated feature) | `{ downloadUrl: string }` — signed, short-lived S3-compatible URL per TRD §6 |
-| 6.5 | Play button overlay | `VideoHub.tsx:46-48` | No handler | Video | Track's `videoUrl`/HLS manifest from 6.1, or `GET /api/v1/videos/{id}/stream` | — | Opens a video player (modal or dedicated page) streaming via CDN/adaptive bitrate |
-| 6.6 | Duration badge | `VideoHub.tsx:50-51` | Hardcoded ("24:18" etc.) | Video | included in 6.1 response | — | `duration: string` (or seconds, formatted client-side) |
-| 6.7 | View count | `VideoHub.tsx:54` | Hardcoded ("142K views") | Video / Analytics | included in 6.1 response, increment via `POST /api/v1/videos/{id}/view-event` | — | `{ views: number }` |
-| 6.8 | "Browse All Videos" link | `VideoHub.tsx:20-22` | `href="#"` | Video | Routes to full catalog page calling `GET /api/v1/videos` (no filter) | pagination | `{ items: VideoItem[], total: number }` |
+| 6.1 | Video catalog | `VideoHub.tsx` | Reads visible YouTube-backed records | Video | `GET /api/videos` | — | Video rows including `youtube_video_id`, category, thumbnail, and visibility |
+| 6.2 | YouTube player | `VideoHub.tsx` | Opens a privacy-enhanced YouTube embed in a modal | YouTube embed | `https://www.youtube-nocookie.com/embed/{youtube_video_id}` | YouTube video ID | Browser streams video from YouTube; no video file is stored on the VPS |
+| 6.3 | Search and category filters | `VideoHub.tsx` | Filters the loaded catalog by title, description, and category | Video | Client-side | Search text or category | Matching visible video rows |
+| 6.4 | Admin video entry | `src/app/dashboard/admin/VideosManagement.tsx` | Content managers paste a YouTube URL and enter metadata | Video | `POST /api/videos`, `PUT /api/videos/:id` | Title, YouTube URL, description, category, thumbnail, duration, language, visibility, featured flag | Stored video record with validated YouTube ID |
+| 6.5 | Admin catalog | `src/app/dashboard/admin/App.tsx` | Includes hidden and legacy records for editing | Video | `GET /api/videos/admin` (authenticated content manager) | Bearer token | All video rows |
+
+Apply `Backend/migrations/005_youtube_hosted_videos.sql` before deploying the backend. Video comments and playlists continue to use their existing database records and endpoints; offline downloads are intentionally not offered for YouTube-hosted videos.
 
 ---
 

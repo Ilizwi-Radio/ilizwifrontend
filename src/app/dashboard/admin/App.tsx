@@ -6,10 +6,10 @@ import {
   getEvents,
   getShows,
   getOpportunities,
-  getVideos,
   getSongs,
   getCourses,
 } from "@/lib/api";
+import { listVideos } from "@/services/video.service";
 import {
   getRadioSourceMode,
   isRadioSourceMode,
@@ -66,7 +66,7 @@ export default function App({ moderatorMode = false }: { moderatorMode?: boolean
     getShows(true).then(setShows).catch(console.error);
     getOpportunities(true).then(setOpportunities).catch(console.error);
     getSongs(true).then(setSongs).catch(console.error);
-    getVideos(true).then(setVideos).catch(console.error);
+    listVideos(true).then(setVideos).catch(console.error);
     getCourses(true).then(setCourses).catch(console.error);
     if (!moderatorMode) {
       getSiteSettings().then((s) => setSectionSettings(s?.homepage_sections ?? {})).catch(console.error);
@@ -84,7 +84,7 @@ export default function App({ moderatorMode = false }: { moderatorMode?: boolean
   const refreshShows = async () => { setShows(await getShows(true)); };
   const refreshOpportunities = async () => { setOpportunities(await getOpportunities(true)); };
   const refreshSongs = async () => { setSongs(await getSongs(true)); };
-  const refreshVideos = async () => { setVideos(await getVideos(true)); };
+  const refreshVideos = async () => { setVideos(await listVideos(true)); };
   const refreshCourses = async () => { setCourses(await getCourses(true)); };
 
   const toggleSection = async (key: string, visible: boolean) => {

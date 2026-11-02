@@ -1,118 +1,221 @@
 "use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Icon from "./Icon";
 import FadeIn from "./FadeIn";
-import {useEffect, useState} from "react";
-import { getVideos } from "@/lib/api";
+import { listVideos, type VideoItem } from "@/services/video.service";
 
-
+function formatDuration(seconds?: number | null) {
+  if (!seconds || seconds < 0) return null;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+}
 
 export default function VideoHub() {
-  const [videos, setVideos] = useState<any[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [activeVideo, setActiveVideo] = useState<VideoItem | null>(null);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
+    let active = true;
+    listVideos()
+      .then((items) => {
+        if (active) setVideos(items);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load videos:", error);
+        if (active) setLoadError("Videos could not be loaded right now.");
+      });
 
-  const loadVideos = async () => {
+    return () => {
+      active = false;
+    };
+  }, []);
 
-    try {
+  useEffect(() => {
+    if (!activeVideo) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveVideo(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [activeVideo]);
 
-      const data = await getVideos();
+  const categories = useMemo(
+    () => [
+      "All",
+      ...new Set(
+        videos
+          .map((video) => video.category_name?.trim())
+          .filter((value): value is string => Boolean(value) && value !== "All")
+      ),
+    ],
+    [videos]
+  );
+  const filteredVideos = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return videos.filter((video) => {
+      const matchesCategory = category === "All" || video.category_name?.trim() === category;
+      const matchesSearch =
+        !query ||
+        `${video.title} ${video.description ?? ""} ${video.category_name ?? ""}`
+          .toLowerCase()
+          .includes(query);
+      return matchesCategory && matchesSearch;
+    });
+  }, [category, search, videos]);
 
-      const mappedVideos = data.map((video: any, index: number) => ({
-
-        tag:
-          video.category_name?.toUpperCase() ||
-          "VIDEO",
-
-        title:
-          video.title,
-
-        views:
-          `${video.view_count || 0} views`,
-
-        dur:
-          `${Math.floor(video.duration_seconds / 60)}:${String(
-            video.duration_seconds % 60
-          ).padStart(2, "0")}`,
-
-        from: "#c9762f",
-
-        to: "#7a3a17",
-
-        big: index === 0
-
-      }));
-
-      setVideos(mappedVideos);
-
-    } catch (error) {
-
-      console.error(
-        "Failed to load videos",
-        error
-      );
-
-    }
-
-  };
-
-  loadVideos();
-
-}, []);
   return (
     <FadeIn>
       <section id="videos" className="bg-stone-50 py-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 text-green-700 text-xs font-bold tracking-wide mb-3">
+              <div className="mb-3 flex items-center gap-2 text-xs font-bold tracking-wide text-green-700">
                 <Icon name="play" /> VIDEO HUB
               </div>
-              <h2 className="display text-4xl text-green-900 mb-2">Stories of Africa</h2>
-              <p className="text-stone-500 max-w-lg">
-                Documentaries, cultural celebrations, interviews and educational content. Save &amp; watch offline.
+              <h2 className="display mb-2 text-4xl text-green-900">Stories of Africa</h2>
+              <p className="max-w-lg text-stone-500">
+                Documentaries, cultural celebrations, interviews and educational content. Watch here, streamed by YouTube.
               </p>
             </div>
-            <a href="#" className="text-orange-600 font-semibold text-sm flex items-center gap-1 hover:gap-2 transition-all">
+            <a href="#video-library" className="flex items-center gap-1 text-sm font-semibold text-orange-600 transition-all hover:gap-2">
               Browse All Videos <Icon name="arrow" />
             </a>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-5">
-          
-            {videos.length > 0 && videos.map((v) => (
-              <div
-                key={v.title}
-                className={`${v.big ? "lg:col-span-2 lg:row-span-2" : ""} rounded-xl overflow-hidden bg-white border border-stone-200 group`}
-              >
-                <div
-                  className={`relative ${v.big ? "h-full min-h-[280px]" : "h-40"} flex items-center justify-center`}
-                  style={{ background: `linear-gradient(135deg,${v.from},${v.to})` }}
-                >
-                  <span className="absolute top-2.5 left-2.5 bg-yellow-400 text-green-950 text-[11px] font-bold px-2.5 py-1 rounded-full">
-                    {v.tag}
-                  </span>
-                  <div className="absolute top-2.5 right-2.5 flex gap-1.5">
-                    <button className="w-7 h-7 rounded-full bg-black/30 flex items-center justify-center">
-                      <Icon name="bookmark" className="w-3.5 h-3.5" />
-                    </button>
-                    <button className="w-7 h-7 rounded-full bg-black/30 flex items-center justify-center">
-                      <Icon name="download" className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <span className="w-14 h-14 rounded-full bg-orange-500/90 group-hover:scale-110 transition-transform flex items-center justify-center">
-                    <Icon name="play" className="w-6 h-6" />
-                  </span>
-                  <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-between">
-                    <span className="font-bold text-sm">{v.title}</span>
-                    <span className="text-[11px] bg-black/40 rounded px-1.5 py-0.5">{v.dur}</span>
-                  </div>
-                </div>
-                <div className="px-3 py-2 text-stone-500 text-xs">{v.views}</div>
+          <div id="video-library" className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2 sm:w-80">
+              <Icon name="search" className="h-4 w-4 text-stone-400" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search videos"
+                aria-label="Search videos"
+                className="min-w-0 flex-1 text-sm outline-none"
+              />
+            </label>
+            {categories.length > 1 && (
+              <div className="flex flex-wrap gap-2" aria-label="Filter videos by category">
+                {categories.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setCategory(item)}
+                    aria-pressed={category === item}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                      category === item ? "bg-green-900 text-white" : "bg-white text-stone-600 ring-1 ring-stone-200"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
           </div>
+
+          {loadError ? (
+            <p role="alert" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{loadError}</p>
+          ) : filteredVideos.length === 0 ? (
+            <p className="rounded-lg border border-stone-200 bg-white p-6 text-sm text-stone-500">
+              {videos.length ? "No videos match your search." : "The Video Hub is getting ready. Check back soon."}
+            </p>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredVideos.map((video, index) => {
+                if (!video.youtube_video_id) return null;
+                const isFeatured = video.is_featured && index === 0;
+                const duration = formatDuration(video.duration_seconds);
+                const thumbnail =
+                  video.thumbnail_url ||
+                  `https://i.ytimg.com/vi/${video.youtube_video_id}/hqdefault.jpg`;
+
+                return (
+                  <article
+                    key={video.id}
+                    className={`${isFeatured ? "lg:col-span-2" : ""} group overflow-hidden rounded-xl border border-stone-200 bg-white`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setActiveVideo(video)}
+                      aria-label={`Play ${video.title}`}
+                      className="relative block aspect-video w-full overflow-hidden bg-stone-900 text-left"
+                    >
+                      <img
+                        src={thumbnail}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/10 transition-colors group-hover:bg-black/25">
+                        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/95 text-white shadow-lg">
+                          <Icon name="play" className="h-6 w-6" />
+                        </span>
+                      </span>
+                      {video.category_name && (
+                        <span className="absolute left-3 top-3 rounded-full bg-yellow-400 px-2.5 py-1 text-[11px] font-bold uppercase text-green-950">
+                          {video.category_name}
+                        </span>
+                      )}
+                      {duration && (
+                        <span className="absolute bottom-3 right-3 rounded bg-black/75 px-1.5 py-0.5 text-[11px] text-white">
+                          {duration}
+                        </span>
+                      )}
+                    </button>
+                    <div className="p-4">
+                      <h3 className="font-bold text-green-950">{video.title}</h3>
+                      {video.description && (
+                        <p className="mt-1 line-clamp-2 text-sm text-stone-600">{video.description}</p>
+                      )}
+                      <p className="mt-3 text-xs text-stone-500">
+                        {new Intl.NumberFormat().format(video.view_count ?? 0)} views
+                      </p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
+
+      {activeVideo?.youtube_video_id && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={activeVideo.title}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setActiveVideo(null);
+          }}
+        >
+          <div className="w-full max-w-5xl">
+            <div className="mb-3 flex items-center justify-between gap-4 text-white">
+              <h2 className="truncate font-semibold">{activeVideo.title}</h2>
+              <button
+                type="button"
+                onClick={() => setActiveVideo(null)}
+                className="rounded px-3 py-1.5 text-sm hover:bg-white/15"
+              >
+                Close
+              </button>
+            </div>
+            <div className="aspect-video overflow-hidden rounded-lg bg-black">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtube_video_id}?autoplay=1&rel=0`}
+                title={activeVideo.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+                className="h-full w-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </FadeIn>
   );
 }

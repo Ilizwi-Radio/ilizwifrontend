@@ -89,13 +89,15 @@ export const musicFields: FieldConfig[] = [
 ];
 
 export const videoFields: FieldConfig[] = [
-  { key: "title", label: "Video Title", placeholder: "Heritage Day Celebration 2025" },
-  { key: "tag", label: "Category", placeholder: "CULTURAL" },
-  { key: "views", label: "Views", placeholder: "142K views" },
-  { key: "dur", label: "Duration", placeholder: "24:18" },
-  { key: "big", label: "Feature as large card", type: "checkbox" },
-  { key: "from", label: "Gradient Start", type: "color", placeholder: "#c9762f" },
-  { key: "to", label: "Gradient End", type: "color", placeholder: "#7a3a17" },
+  { key: "title", label: "Video Title", placeholder: "Heritage Day Celebration 2025", required: true },
+  { key: "video_file_url", label: "YouTube video link", placeholder: "https://youtu.be/...", required: true },
+  { key: "description", label: "Description", type: "textarea" },
+  { key: "category_name", label: "Category", placeholder: "Cultural" },
+  { key: "thumbnail_url", label: "Thumbnail URL (optional)", placeholder: "Uses the YouTube thumbnail by default" },
+  { key: "duration_seconds", label: "Duration in seconds", placeholder: "1458" },
+  { key: "language_code", label: "Language code", placeholder: "en", defaultValue: "en" },
+  { key: "is_featured", label: "Feature on the Video Hub", type: "checkbox" },
+  { key: "is_visible", label: "Visible to visitors", type: "checkbox", defaultValue: true },
 ];
 
 export const eventFields: FieldConfig[] = [

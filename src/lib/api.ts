@@ -76,7 +76,7 @@ export async function getVideos(
   includeHidden = false
 ) {
   const response = await fetch(
-    `${API_URL}/api/videos${includeHidden ? "?includeHidden=true" : ""}`,
+    `${API_URL}/api/videos${includeHidden ? "/admin" : ""}`,
     includeHidden
       ? { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       : undefined
