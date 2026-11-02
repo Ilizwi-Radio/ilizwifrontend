@@ -15,22 +15,14 @@ import {
   Play,
   Square,
   Volume2,
-  VolumeX,
   Sparkles,
-  Sliders,
   Music,
   Plus,
-  Flame,
   Clock,
   Users,
-  RadioTower,
-  Headphones,
   Upload,
-  Layers,
-  Check,
   Disc3,
   Circle,
-  Download,
   MessageSquare,
   Send,
   Zap,
@@ -117,11 +109,7 @@ export default function PresenterStudio({
 
   
   // Live Chat / Shoutouts
-  const [messages, setMessages] = useState<{ id: string; user: string; text: string; time: string; tag?: string }[]>([
-    { id: '1', user: 'Sarah_K', text: 'Marcus on the airwaves! Turn that baseline UP! 🔥', time: 'Just now', tag: 'Fan' },
-    { id: '2', user: 'AlexRadio', text: 'Greetings from London! Loving the late night selection.', time: '1m ago', tag: 'Listener' },
-    { id: '3', user: 'Elena_FM', text: 'Great handover Marcus, smash the set! 📻', time: '3m ago', tag: 'Co-Host' },
-  ]);
+  const [messages, setMessages] = useState<{ id: string; user: string; text: string; time: string; tag?: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
   useEffect(() => {
       getShows().then((allShows) => {
@@ -604,7 +592,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {user?.role === "admin" && presenterProfileLoaded && !myPresenterProfileId && (
         <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
           <p className="font-semibold">Set up your presenter profile before going live</p>
@@ -615,7 +603,7 @@ useEffect(() => {
         </div>
       )}
       {/* Studio Header Bar */}
-      <div className="bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      <div className="bg-stone-900 border border-stone-800 rounded-xl p-3 shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
         <div className="flex items-center gap-4 flex-wrap">
           {/* ON AIR Indicator Sign */}
           <div
@@ -653,7 +641,7 @@ useEffect(() => {
         </div>
 
         {/* Quick Tickers: Time, Listeners, Ducking status */}
-        <div className="flex items-center gap-6 flex-wrap font-mono text-sm">
+        <div className="flex items-center gap-4 flex-wrap font-mono text-sm">
           <div className="flex items-center gap-2 text-stone-300">
             <Clock className="w-4 h-4 text-emerald-400" />
             <span className="text-xs text-stone-400">AIRTIME:</span>
@@ -684,170 +672,70 @@ useEffect(() => {
       </div>
 
       {selectedShow && myPresenterProfileId && (selectedShow.presenter_id === myPresenterProfileId || selectedShow.cohost_presenter_id === myPresenterProfileId) && (
-        <CohostLink showId={selectedShow.id} showTitle={selectedShow.title} onConnectionChange={setCohostRoomJoined} />
+        <details open={cohostRoomJoined} className="rounded-xl border border-emerald-200 bg-emerald-50">
+          <summary className="cursor-pointer px-4 py-2 text-sm font-semibold text-emerald-950">
+            Remote co-host controls
+          </summary>
+          <div className="px-3 pb-3">
+            <CohostLink showId={selectedShow.id} showTitle={selectedShow.title} onConnectionChange={setCohostRoomJoined} />
+          </div>
+        </details>
       )}
 
-      {/* CENTERSTAGE: HUGE MICROPHONE WITH SOUND WAVES */}
-      <div className="relative bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 border border-stone-800 rounded-3xl p-8 sm:p-12 shadow-2xl overflow-hidden text-center">
-        {/* Subtle Ambient Background glow */}
-        <div
-          className={`absolute inset-0 transition-opacity duration-700 pointer-events-none ${
-            isBroadcasting && !isMuted
-              ? 'opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500 via-transparent to-transparent'
-              : 'opacity-0'
-          }`}
-        />
-
-        {/* Huge Microphone Wave Container */}
-        <div className="relative flex items-center justify-center py-6">
-          {/* Animated Wave Rings based on Voice Intensity */}
-          {isBroadcasting && !isMuted && (
-            <>
-              {/* Outer Wave Ring 3 */}
-              <div
-                className="absolute rounded-full border border-emerald-500/30 transition-all duration-150 pointer-events-none"
-                style={{
-                  width: `${240 + voiceIntensity * 2.8}px`,
-                  height: `${240 + voiceIntensity * 2.8}px`,
-                  opacity: Math.min(0.8, 0.2 + voiceIntensity / 140),
-                  transform: `scale(${1 + (voiceIntensity / 250)})`,
-                  boxShadow: `0 0 ${20 + voiceIntensity * 0.4}px rgba(16, 185, 129, 0.25)`,
-                }}
-              />
-
-              {/* Middle Wave Ring 2 */}
-              <div
-                className="absolute rounded-full border-2 border-emerald-400/40 transition-all duration-100 pointer-events-none"
-                style={{
-                  width: `${190 + voiceIntensity * 2.0}px`,
-                  height: `${190 + voiceIntensity * 2.0}px`,
-                  opacity: Math.min(0.9, 0.3 + voiceIntensity / 100),
-                  transform: `scale(${1 + (voiceIntensity / 300)})`,
-                  boxShadow: `0 0 ${15 + voiceIntensity * 0.5}px rgba(16, 185, 129, 0.4)`,
-                }}
-              />
-
-              {/* Inner High-Energy Wave Ring 1 */}
-              <div
-                className="absolute rounded-full border-2 border-emerald-300/60 transition-all duration-75 pointer-events-none"
-                style={{
-                  width: `${150 + voiceIntensity * 1.2}px`,
-                  height: `${150 + voiceIntensity * 1.2}px`,
-                  opacity: Math.min(1.0, 0.4 + voiceIntensity / 80),
-                  boxShadow: `0 0 ${25 + voiceIntensity * 0.6}px rgba(52, 211, 153, 0.6)`,
-                }}
-              />
-            </>
-          )}
-
-          {/* Huge Interactive Center Microphone Button */}
-          <button
-            onClick={handleToggleBroadcast}
-            disabled={isGoingLive}
-            className={`relative z-10 w-36 h-36 sm:w-44 sm:h-44 rounded-full flex flex-col items-center justify-center transition-all duration-300 transform active:scale-95 shadow-2xl cursor-pointer group disabled:opacity-60 disabled:cursor-wait ${
+      {/* Compact broadcast mixer */}
+      <div className="relative overflow-hidden rounded-xl border border-stone-800 bg-gradient-to-r from-stone-900 to-stone-950 p-3 shadow-xl">
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-emerald-500/70" />
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.1fr)_minmax(280px,1fr)] xl:items-center">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border ${
               isBroadcasting
                 ? isMuted
-                  ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_40px_rgba(217,119,6,0.5)] ring-8 ring-amber-500/30'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_60px_rgba(16,185,129,0.6)] ring-8 ring-emerald-500/40'
-                : 'bg-stone-800 hover:bg-stone-700 text-stone-300 border-4 border-stone-700 hover:border-emerald-600/60'
-            }`}
-          >
-            {isGoingLive ? (
-              <>
-                <Radio className="w-16 h-16 sm:w-20 sm:h-20 animate-pulse text-stone-300" />
-                <span className="text-xs font-mono font-bold uppercase mt-1 tracking-wider text-stone-300">
-                  CONNECTING…
-                </span>
-              </>
-            ) : isBroadcasting ? (
-              isMuted ? (
-                <>
-                  <MicOff className="w-16 h-16 sm:w-20 sm:h-20 animate-pulse text-amber-100" />
-                  <span className="text-xs font-mono font-bold uppercase mt-1 tracking-wider text-amber-100">
-                    MUTED
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Mic className="w-16 h-16 sm:w-20 sm:h-20 text-white" />
-                  <span className="text-xs font-mono font-bold uppercase mt-1 tracking-wider text-emerald-100">
-                    LIVE
-                  </span>
-                </>
-              )
-            ) : (
-              <>
-                <Mic className="w-16 h-16 sm:w-20 sm:h-20 text-stone-400 group-hover:text-emerald-400 transition" />
-                <span className="text-xs font-mono font-bold uppercase mt-1 tracking-wider text-stone-400 group-hover:text-white">
-                  CLICK TO GO LIVE
-                </span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Studio Status Badge & Controls Under Mic */}
-        <div className="mt-4 max-w-md mx-auto space-y-4">
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            {/* Go Live / Stop broadcast button */}
+                  ? 'border-amber-400/50 bg-amber-500/15 text-amber-300'
+                  : 'border-red-400/50 bg-red-500/15 text-red-300'
+                : 'border-stone-700 bg-stone-800 text-stone-400'
+            }`}>
+              {isMuted && isBroadcasting ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            </div>
+            <div className="min-w-[110px]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500">Microphone</p>
+              <p className="text-sm font-bold text-white">{isBroadcasting ? (isMuted ? 'Muted' : 'Live on air') : 'Standby'}</p>
+            </div>
             <button
               onClick={handleToggleBroadcast}
               disabled={isGoingLive || (selectedShowIsCohost && !isBroadcasting)}
-              className={`px-6 py-2.5 rounded-xl font-bold text-sm transition shadow-lg flex items-center gap-2 disabled:opacity-60 disabled:cursor-wait ${
-                isBroadcasting
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950'
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition disabled:cursor-wait disabled:opacity-50 ${
+                isBroadcasting ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-emerald-600 text-white hover:bg-emerald-500'
               }`}
             >
-              <Radio className="w-4 h-4" />
-              {isGoingLive ? 'Connecting…' : isBroadcasting ? 'End Broadcast' : selectedShowIsCohost ? 'Co-host mode' : 'Start Broadcasting'}
+              <Radio className="h-4 w-4" />
+              {isGoingLive ? 'Connecting…' : isBroadcasting ? 'End broadcast' : selectedShowIsCohost ? 'Co-host mode' : 'Go live'}
             </button>
-
-            {/* Mute toggle button */}
             {isBroadcasting && (
               <button
                 onClick={handleToggleMute}
-                className={`px-4 py-2.5 rounded-xl font-semibold text-sm border transition flex items-center gap-2 ${
-                  isMuted
-                    ? 'bg-amber-600 text-white border-amber-500'
-                    : 'bg-stone-800 hover:bg-stone-700 text-stone-200 border-stone-700'
+                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition ${
+                  isMuted ? 'border-amber-500 bg-amber-600 text-white' : 'border-stone-700 bg-stone-800 text-stone-200 hover:bg-stone-700'
                 }`}
               >
-                {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                {isMuted ? 'Unmute Mic' : 'Mute Mic'}
+                {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                {isMuted ? 'Unmute' : 'Mute'}
               </button>
             )}
-
             {isBroadcasting && (
               <button
                 onClick={isRecording ? stopLocalRecording : startLocalRecording}
-                className={`px-4 py-2.5 rounded-xl font-semibold text-sm border transition flex items-center gap-2 ${
-                  isRecording
-                    ? 'bg-red-950 text-red-200 border-red-700 hover:bg-red-900'
-                    : 'bg-stone-800 hover:bg-stone-700 text-stone-200 border-stone-700'
+                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition ${
+                  isRecording ? 'border-red-700 bg-red-950 text-red-200' : 'border-stone-700 bg-stone-800 text-stone-200 hover:bg-stone-700'
                 }`}
                 aria-pressed={isRecording}
               >
-                {isRecording ? <><Square className="w-4 h-4" /><Download className="w-4 h-4" />Stop &amp; Download {formatTime(recordingSeconds)}</> : <><Circle className="w-4 h-4 text-red-400" />Record Locally</>}
+                {isRecording ? <Square className="h-4 w-4" /> : <Circle className="h-4 w-4 text-red-400" />}
+                {isRecording ? `Recording ${formatTime(recordingSeconds)}` : 'Record'}
               </button>
             )}
           </div>
-
-          {isRecording && (
-            <p className="text-center text-[11px] text-stone-400 font-mono">
-              Recording the full broadcast mix. The audio file downloads to this device when stopped.
-            </p>
-          )}
-          {recordingError && (
-            <p role="alert" className="text-center text-xs text-red-300">{recordingError}</p>
-          )}
-
-          {/* Mic Gain Slider */}
-          <div className="bg-stone-950/70 backdrop-blur border border-stone-800 rounded-xl p-3.5 flex items-center justify-between gap-4 text-xs font-mono">
-            <span className="text-stone-400 flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-emerald-400" />
-              MIC GAIN
-            </span>
+          <div className="flex items-center gap-3 rounded-lg border border-stone-800 bg-stone-950/80 px-3 py-2">
+            <span className="shrink-0 text-[10px] font-semibold tracking-wider text-stone-500">MIC GAIN</span>
             <input
               type="range"
               min="0"
@@ -855,15 +743,33 @@ useEffect(() => {
               step="0.05"
               value={micVolume}
               onChange={(e) => handleMicVolumeChange(parseFloat(e.target.value))}
-              className="flex-1 accent-emerald-500 cursor-pointer"
+              className="min-w-16 flex-1 accent-emerald-500 cursor-pointer"
+              aria-label="Microphone gain"
             />
-            <span className="text-white font-bold w-12 text-right">
-              {Math.round(micVolume * 100)}%
-            </span>
+            <span className="w-10 text-right font-mono text-xs font-bold text-white">{Math.round(micVolume * 100)}%</span>
+            <div className="hidden h-6 items-end gap-0.5 sm:flex" aria-label={`Microphone level ${voiceIntensity}%`}>
+              {Array.from({ length: 12 }, (_, index) => {
+                const active = isBroadcasting && !isMuted && voiceIntensity >= ((index + 1) / 12) * 100;
+                return (
+                  <span
+                    key={index}
+                    className={`w-1.5 rounded-sm ${active ? index > 9 ? 'bg-red-500' : index > 7 ? 'bg-amber-400' : 'bg-emerald-400' : 'bg-stone-700'}`}
+                    style={{ height: `${6 + index * 1.25}px` }}
+                  />
+                );
+              })}
+            </div>
           </div>
+        </div>
+
+        {/* Studio Status Badge & Controls Under Mic */}
+        <div className="mt-2 space-y-2">
+          {recordingError && (
+            <p role="alert" className="text-xs text-red-300">{recordingError}</p>
+          )}
 
           {streamStatus === 'error' && isBroadcasting && (
-            <p className="text-[11px] text-red-400/90 font-mono flex items-center justify-center gap-1.5">
+            <p className="text-[11px] text-red-400/90 font-mono flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5" /> Lost connection to the stream relay. Listeners may not be hearing you.
             </p>
           )}
@@ -871,40 +777,67 @@ useEffect(() => {
       </div>
 
       {/* REAL-TIME VOICE INTENSITY & SPECTRUM VISUALIZER */}
-      <VoiceVisualizer
-        isLive={isBroadcasting}
-        isMuted={isMuted}
-        intensity={voiceIntensity}
-        peak={voicePeak}
-      />
+      <details className="rounded-xl border border-stone-800 bg-stone-900">
+        <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-stone-200">
+          Advanced signal monitor
+          <span className="ml-2 text-xs font-normal text-stone-500">{isMuted ? 'Mic muted' : `${voiceIntensity}% input`} · peak {voicePeak}%</span>
+        </summary>
+        <div className="p-3 pt-0">
+          <VoiceVisualizer
+            isLive={isBroadcasting}
+            isMuted={isMuted}
+            intensity={voiceIntensity}
+            peak={voicePeak}
+          />
+        </div>
+      </details>
 
       {/* PRESENTER MUSIC DECK & SOUNDBOARD (Dual Grid) */}
-      <div className="grid lg:grid-cols-12 gap-8">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.8fr)]">
         {/* MUSIC DECK (7 Cols) */}
-        <div className="lg:col-span-7 bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div className="bg-stone-900 border border-stone-800 rounded-xl p-3 shadow-xl space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400">
-                <Music className="w-5 h-5" />
+              <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400">
+                <Music className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Presenter Music Deck</h3>
-                <p className="text-xs text-stone-400">
-                  Play background music, lo-fi talk beds, and imported tracks while live
-                </p>
+                <h3 className="text-sm font-bold text-white">On-air deck</h3>
+                <p className="text-[11px] text-stone-400">Station library · live playback and queue</p>
               </div>
             </div>
-
-            <button
-              onClick={() => setIsAddMusicOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition shadow"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add Music Track
-            </button>
           </div>
 
+          {selectedShowId ? (
+            <BroadcastQueuePanel
+              showId={selectedShowId}
+              canPlay={isBroadcasting && streamStatus === 'live'}
+              onPlaybackStart={() => {
+                setIsPlayingMusic(false);
+                setActiveTrack(null);
+              }}
+              onPlaybackStateChange={setIsQueuePlaying}
+            />
+          ) : (
+            <p className="rounded-lg border border-stone-800 bg-stone-950/70 p-3 text-xs text-stone-400">
+              Select a show to search the station library and manage its broadcast queue.
+            </p>
+          )}
+
+          <details className="rounded-lg border border-stone-800 bg-stone-950/50">
+            <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-stone-300">
+              Legacy local deck
+              <span className="ml-2 font-normal text-stone-500">{tracks.length} tracks · volume and playback</span>
+            </summary>
+            <div className="space-y-3 p-3 pt-1">
+              <button
+                onClick={() => setIsAddMusicOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-stone-200 transition hover:bg-stone-700"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add local track
+              </button>
           {/* Active Player Deck */}
-          <div className="bg-stone-950 border border-stone-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-stone-950 border border-stone-800 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3.5 w-full sm:w-auto">
               <div
                 className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-lg bg-gradient-to-br ${
@@ -1020,41 +953,28 @@ useEffect(() => {
               );
             })}
           </div>
-          {selectedShowId ? (
-            <BroadcastQueuePanel
-              showId={selectedShowId}
-              canPlay={isBroadcasting && streamStatus === 'live'}
-              onPlaybackStart={() => {
-                setIsPlayingMusic(false);
-                setActiveTrack(null);
-              }}
-              onPlaybackStateChange={setIsQueuePlaying}
-            />
-          ) : (
-            <p className="rounded-xl border border-stone-800 bg-stone-950/70 p-4 text-xs text-stone-400">
-              Select a show to search the station library and manage its broadcast queue.
-            </p>
-          )}
+            </div>
+          </details>
         </div>
 
         {/* SOUNDBOARD FX & LIVE CHAT (5 Cols) */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="space-y-3">
           {/* Instant Soundboard FX */}
-          <div className="bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <div className="bg-stone-900 border border-stone-800 rounded-xl p-3 shadow-xl space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-                <h3 className="text-base font-bold text-white">Live Soundboard FX</h3>
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-bold text-white">Soundboard</h3>
               </div>
-              <span className="text-[11px] font-mono text-stone-400">Click to Trigger</span>
+              <span className="text-[10px] font-mono text-stone-500">FX</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-2">
               {SOUND_EFFECTS.map((sfx) => (
                 <button
                   key={sfx.id}
                   onClick={() => handleTriggerSfx(sfx)}
-                  className={`p-3 rounded-xl font-semibold text-xs text-white flex items-center justify-between transition shadow active:scale-95 cursor-pointer ${sfx.color}`}
+                  className={`min-h-9 rounded-lg px-2 py-1.5 font-semibold text-[11px] text-white flex items-center justify-between gap-1 transition active:scale-95 cursor-pointer ${sfx.color}`}
                 >
                   <span className="truncate">{sfx.name}</span>
                   <span className="text-[10px] font-mono opacity-75 bg-black/30 px-1.5 py-0.5 rounded">
@@ -1066,44 +986,50 @@ useEffect(() => {
           </div>
 
           {/* Live Studio Feed / Listener Shoutouts */}
-          <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5 shadow-xl space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-stone-200">
-                <MessageSquare className="w-4 h-4 text-emerald-400" />
-                <h4 className="text-sm font-bold text-white">Live Studio Chat</h4>
-              </div>
-              <span className="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">
-                3 New
+          <details className="rounded-xl border border-stone-800 bg-stone-900">
+            <summary className="cursor-pointer px-3 py-2.5 text-sm font-semibold text-white">
+              <span className="inline-flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-emerald-400" />
+                Local shoutout notes
               </span>
-            </div>
+              <span className="ml-2 text-[10px] font-normal text-stone-500">Not connected to listener chat</span>
+            </summary>
+            <div className="space-y-3 border-t border-stone-800 p-3">
+              <div className="flex items-center justify-between text-[11px] text-stone-400">
+                <span>Drafts stay in this studio session</span>
+                <span>{messages.length} notes</span>
+              </div>
 
-            <div className="space-y-2 max-h-40 overflow-y-auto text-xs pr-1">
-              {messages.map((msg) => (
-                <div key={msg.id} className="bg-stone-950 p-2.5 rounded-xl border border-stone-800">
-                  <div className="flex justify-between items-center text-[10px] font-mono mb-1">
-                    <span className="font-bold text-emerald-400">{msg.user}</span>
-                    <span className="text-stone-500">{msg.time}</span>
+              <div className="space-y-2 max-h-40 overflow-y-auto text-xs pr-1">
+                {!messages.length && <p className="text-xs text-stone-500">No notes yet.</p>}
+                {messages.map((msg) => (
+                  <div key={msg.id} className="bg-stone-950 p-2.5 rounded-xl border border-stone-800">
+                    <div className="flex justify-between items-center text-[10px] font-mono mb-1">
+                      <span className="font-bold text-emerald-400">{msg.user}</span>
+                      <span className="text-stone-500">{msg.time}</span>
+                    </div>
+                    <p className="text-stone-300">{msg.text}</p>
                   </div>
-                  <p className="text-stone-300">{msg.text}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <form onSubmit={handleSendMessage} className="flex gap-2 pt-1">
-              <input
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Send a host shoutout to listeners..."
-                className="flex-1 bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-600"
-              />
-              <button
-                type="submit"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white p-2 rounded-xl"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Draft a shoutout..."
+                  className="flex-1 bg-stone-950 border border-stone-800 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-emerald-600"
+                />
+                <button
+                  type="submit"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white p-2 rounded-lg"
+                  aria-label="Save local shoutout note"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          </details>
         </div>
       </div>
 
