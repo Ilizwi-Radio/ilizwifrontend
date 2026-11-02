@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth';
+import { AuthProvider, useAuth } from '@/lib/auth';
 import RequireRole from '@/components/RequireRole';
 import Sidebar from './Sidebar';
 import DashboardHeader from './DashboardHeader';
@@ -25,10 +25,7 @@ function PresenterAppContent() {
   const [requestedShowId, setRequestedShowId] = useState('');
 
   useEffect(() => {
-    getShows().then((shows) => setShowsCount(shows.length)).catch((error) => {
-      console.error("Failed to load presenter show count:", error);
-      setShowsCount(0);
-    });
+    getShows().then((shows) => setShowsCount(shows.length));
   }, []);
 
   const handleGoLiveWithShow = (showId: string) => {
@@ -132,5 +129,11 @@ function PresenterAppContent() {
 }
 
 export default function App() {
-  return <RequireRole role="presenter"><PresenterAppContent /></RequireRole>;
+  return (
+    <AuthProvider>
+      <RequireRole role="presenter">
+        <PresenterAppContent />
+      </RequireRole>
+    </AuthProvider>
+  );
 }
