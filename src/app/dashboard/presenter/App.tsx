@@ -21,6 +21,7 @@ function PresenterAppContent() {
   const { user} = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('studio');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showsCount, setShowsCount] = useState(0);
   const [requestedShowId, setRequestedShowId] = useState('');
 
@@ -76,10 +77,12 @@ function PresenterAppContent() {
         showsCount={showsCount}
         mobileOpen={mobileSidebarOpen}
         setMobileOpen={setMobileSidebarOpen}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)}
       />
 
       {/* Main Content Area (Offset by sidebar width on desktop) */}
-      <div className="flex-1 lg:pl-72 flex flex-col min-h-screen">
+      <div className={`flex-1 flex flex-col min-h-screen transition-[padding] duration-300 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
         {/* Sticky Dashboard Header */}
         <DashboardHeader
           title={getPageTitle()}

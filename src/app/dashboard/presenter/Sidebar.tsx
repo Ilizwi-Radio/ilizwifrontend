@@ -16,7 +16,6 @@ import {
   Sliders,
   Sparkles,
   Users,
-  Menu,
   X,
 } from 'lucide-react';
 
@@ -27,6 +26,8 @@ interface SidebarProps {
   showsCount?: number;
   mobileOpen?: boolean;
   setMobileOpen?: (open: boolean) => void;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }
 
 export default function Sidebar({
@@ -36,6 +37,8 @@ export default function Sidebar({
   showsCount = 0,
   mobileOpen = false,
   setMobileOpen,
+  collapsed = false,
+  onToggleCollapsed,
 }: SidebarProps) {
   const { user } = useAuth();
   const [allPresenters, setAllPresenters] = useState<Presenter[]>([]);
@@ -101,24 +104,36 @@ export default function Sidebar({
 
       {/* Main Sidebar */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-stone-950 border-r border-stone-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 ${collapsed ? 'lg:w-20' : 'lg:w-72'} bg-stone-950 border-r border-stone-800 flex flex-col justify-between transition-[width,transform] duration-300 ease-in-out lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Top Branding */}
         <div>
-          <div className="p-6 border-b border-stone-800/80 flex items-center justify-between">
+          <div className={`border-b border-stone-800/80 flex items-center justify-between ${collapsed ? 'p-3 lg:justify-center' : 'p-6'}`}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-green-900 flex items-center justify-center shadow-lg shadow-emerald-950">
+              <div className={`shrink-0 rounded-xl bg-gradient-to-br from-emerald-600 to-green-900 flex items-center justify-center shadow-lg shadow-emerald-950 ${collapsed ? 'h-10 w-10' : 'w-10 h-10'}`}>
                 <RadioTower className="w-5 h-5 text-emerald-200" />
               </div>
-              <div>
+              <div className={collapsed ? 'lg:hidden' : ''}>
                 <h1 className="text-base font-bold text-white tracking-wide flex items-center gap-1.5">
                   ILIZWI RADIO <span className="text-emerald-400 font-mono text-xs">R</span>
                 </h1>
                 <p className="text-[11px] text-stone-400 font-medium">Presenter Broadcast Hub</p>
               </div>
             </div>
+
+            {onToggleCollapsed && (
+              <button
+                type="button"
+                onClick={onToggleCollapsed}
+                className="hidden lg:inline-flex rounded-lg p-2 text-stone-400 hover:bg-stone-900 hover:text-white"
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <ChevronRight className={`h-4 w-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} />
+              </button>
+            )}
 
             {/* Mobile close button */}
             {setMobileOpen && (
@@ -132,9 +147,10 @@ export default function Sidebar({
           </div>
 
           {/* On-Air Status Pill */}
-          <div className="px-6 pt-5">
+          <div className={`pt-5 ${collapsed ? 'px-2 lg:px-3' : 'px-6'}`}>
             <div
-              className={`p-3 rounded-xl border flex items-center justify-between ${
+              title={collapsed ? (isBroadcasting ? 'Studio live on air' : 'Studio standby') : undefined}
+              className={`${collapsed ? 'p-3 lg:justify-center lg:p-2' : 'p-3'} rounded-xl border flex items-center justify-between ${
                 isBroadcasting
                   ? 'bg-red-950/40 border-red-500/40 text-red-300'
                   : 'bg-stone-900/60 border-stone-800 text-stone-400'
@@ -146,19 +162,19 @@ export default function Sidebar({
                     isBroadcasting ? 'bg-red-500 animate-ping' : 'bg-stone-600'
                   }`}
                 />
-                <span className="text-xs font-mono font-bold uppercase">
+                <span className={`text-xs font-mono font-bold uppercase ${collapsed ? 'lg:hidden' : ''}`}>
                   {isBroadcasting ? 'STUDIO LIVE ON AIR' : 'STUDIO STANDBY'}
                 </span>
               </div>
-              <span className="text-[10px] font-mono opacity-70">
+              <span className={`text-[10px] font-mono opacity-70 ${collapsed ? 'lg:hidden' : ''}`}>
                 {isBroadcasting ? 'STREAMING' : 'READY'}
               </span>
             </div>
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-4 space-y-1.5">
-            <p className="px-3 text-[10px] font-mono uppercase tracking-wider text-stone-300 font-semibold mb-2">
+          <nav className={`space-y-1.5 ${collapsed ? 'p-2 lg:p-2' : 'p-4'}`}>
+            <p className={`px-3 text-[10px] font-mono uppercase tracking-wider text-stone-300 font-semibold mb-2 ${collapsed ? 'lg:hidden' : ''}`}>
               Studio Navigation
             </p>
             {navItems.map((item) => {
@@ -169,13 +185,17 @@ export default function Sidebar({
                 <button
                   key={item.id}
                   onClick={() => handleSelectTab(item.id)}
-                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-left transition group cursor-pointer ${
+                  title={collapsed ? item.label : undefined}
+                  aria-label={collapsed ? item.label : undefined}
+                  className={`relative w-full flex items-center justify-between rounded-xl text-left transition group cursor-pointer ${
+                    collapsed ? 'px-2 py-2.5 lg:justify-center lg:px-0' : 'px-3.5 py-3'
+                  } ${
                     isActive
                       ? 'bg-emerald-900 text-white font-bold shadow-md shadow-emerald-950 border border-emerald-700/50'
                       : 'text-stone-400 hover:text-stone-100 hover:bg-stone-900 border border-transparent'
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className={`flex items-center min-w-0 ${collapsed ? 'gap-3 lg:gap-0' : 'gap-3'}`}>
                     <div
                       className={`p-2 rounded-lg transition ${
                         isActive
@@ -185,7 +205,7 @@ export default function Sidebar({
                     >
                       <IconComp className="w-4 h-4" />
                     </div>
-                    <div className="min-w-0">
+                    <div className={`min-w-0 ${collapsed ? 'lg:hidden' : ''}`}>
                       <div className="text-sm font-semibold truncate flex items-center gap-2">
                         {item.label}
                       </div>
@@ -197,7 +217,7 @@ export default function Sidebar({
 
                   {item.badge && (
                     <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${item.badgeColor}`}
+                      className={`${collapsed ? 'lg:absolute lg:right-0.5 lg:top-0.5 lg:px-1 lg:text-[8px]' : ''} text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${item.badgeColor}`}
                     >
                       {item.badge}
                     </span>
@@ -209,13 +229,14 @@ export default function Sidebar({
         </div>
 
         {/* Footer: Presenter Account Info & Switcher */}
-        <div className="p-4 border-t border-stone-800/80 bg-stone-950/90">
+        <div className={`border-t border-stone-800/80 bg-stone-950/90 ${collapsed ? 'p-2 lg:flex lg:justify-center' : 'p-4'}`}>
           <div className="relative">
             <button
               onClick={() => setShowPresenterDropdown(!showPresenterDropdown)}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-800 text-left transition"
+              title={collapsed ? user?.full_name || 'Presenter account' : undefined}
+              className={`flex items-center justify-between rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-800 text-left transition ${collapsed ? 'w-full p-2.5 lg:w-auto' : 'w-full p-2.5'}`}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className={`flex items-center min-w-0 ${collapsed ? 'gap-2.5 lg:gap-0' : 'gap-2.5'}`}>
                 <div
                   className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs text-white"
                   style={{
@@ -226,7 +247,7 @@ export default function Sidebar({
                 >
                   {user?.full_name?.charAt(0) || 'P'}
                 </div>
-                <div className="min-w-0">
+                <div className={`min-w-0 ${collapsed ? 'lg:hidden' : ''}`}>
                   <p className="text-xs font-bold text-white truncate">
                     { user?.full_name}
                   </p>
@@ -235,7 +256,7 @@ export default function Sidebar({
                   </p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-stone-500" />
+              {!collapsed && <ChevronRight className="w-4 h-4 text-stone-500" />}
             </button>
 
             {/* Switcher Dropdown */}

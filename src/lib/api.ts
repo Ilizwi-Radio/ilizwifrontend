@@ -317,6 +317,27 @@ export async function playNextBroadcastQueueItem(showId: string): Promise<{
   };
 }
 
+export async function playStationSongNow(
+  showId: string,
+  songId: string,
+  itemType: BroadcastQueueItemType
+): Promise<{ item: BroadcastQueueItem; audioUrl: string }> {
+  const response = await apiFetch(`${API_URL}/api/broadcast/queue/${showId}/play-now`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ songId, itemType }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Could not play this song now.");
+  if (!data?.item || typeof data.audioUrl !== "string") {
+    throw new Error("The server returned an invalid response for this song.");
+  }
+  return {
+    item: mapBroadcastQueueItem(data.item),
+    audioUrl: data.audioUrl,
+  };
+}
+
 export async function completeBroadcastQueueItem(showId: string, queueItemId: string): Promise<void> {
   const response = await apiFetch(
     `${API_URL}/api/broadcast/queue/${showId}/items/${queueItemId}/complete`,

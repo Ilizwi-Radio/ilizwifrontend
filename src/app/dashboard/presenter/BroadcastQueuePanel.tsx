@@ -7,6 +7,7 @@ import {
   failBroadcastQueueItem,
   getBroadcastQueue,
   playNextBroadcastQueueItem,
+  playStationSongNow,
   removeBroadcastQueueItem,
   searchStationSongs,
 } from "@/lib/api";
@@ -176,6 +177,62 @@ export default function BroadcastQueuePanel({
     }
   };
 
+  const handlePlayNow = async (song: StationSong) => {
+    if (!canPlayRef.current || isChangingQueue) return;
+    setIsChangingQueue(true);
+    setError("");
+    try {
+      const selected = await playStationSongNow(showId, song.id, itemType);
+      if (!canPlayRef.current) {
+        setIsPlaying(false);
+        onPlaybackStateChange(false);
+        return;
+      }
+
+      audioEngine.stopMusic();
+      onPlaybackStart();
+      setCurrentItem(selected.item);
+      setIsPlaying(true);
+      onPlaybackStateChange(true);
+      audioEngine.playCustomAudioUrl(
+        selected.audioUrl,
+        selected.item.queueItemId,
+        () => {
+          void (async () => {
+            if (!canPlayRef.current) return;
+            try {
+              await completeBroadcastQueueItem(showId, selected.item.queueItemId);
+              await refreshQueue();
+              await playNext();
+            } catch (requestError) {
+              setError(requestError instanceof Error ? requestError.message : "Could not advance the queue.");
+              setIsPlaying(false);
+              onPlaybackStateChange(false);
+            }
+          })();
+        },
+        () => {
+          void (async () => {
+            try {
+              await failBroadcastQueueItem(showId, selected.item.queueItemId);
+              await refreshQueue();
+              if (canPlayRef.current) await playNext();
+            } catch (requestError) {
+              setError(requestError instanceof Error ? requestError.message : "The selected song could not be played.");
+              setIsPlaying(false);
+              onPlaybackStateChange(false);
+            }
+          })();
+        }
+      );
+      await refreshQueue();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not play this song now.");
+    } finally {
+      setIsChangingQueue(false);
+    }
+  };
+
   const handleRemove = async (item: BroadcastQueueItem) => {
     setIsChangingQueue(true);
     setError("");
@@ -246,6 +303,9 @@ export default function BroadcastQueuePanel({
         </select>
       </div>
 
+      <p className="mt-2 text-[10px] text-stone-500">
+        Play now replaces the current queue item; other queued tracks stay in line.
+      </p>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <div className="min-w-0">
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-500">
@@ -259,15 +319,26 @@ export default function BroadcastQueuePanel({
                   <p className="truncate text-[11px] font-semibold text-stone-100">{song.title}</p>
                   <p className="truncate text-[10px] text-stone-400">{song.artist} · {song.genre}</p>
                 </div>
-                <button
-                  onClick={() => void handleAdd(song)}
-                  disabled={isChangingQueue}
-                  className="shrink-0 rounded bg-stone-800 p-1.5 text-emerald-300 hover:bg-emerald-800 disabled:opacity-50"
-                  aria-label={`Add ${song.title} to queue`}
-                  title="Add to queue"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() => void handlePlayNow(song)}
+                    disabled={isChangingQueue || !canPlay}
+                    className="flex items-center gap-1 rounded bg-emerald-700 px-2 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label={`Play ${song.title} now`}
+                    title={!canPlay ? "Go live before playing station audio." : "Play now and replace the current track"}
+                  >
+                    <Play className="h-3 w-3" /> Now
+                  </button>
+                  <button
+                    onClick={() => void handleAdd(song)}
+                    disabled={isChangingQueue}
+                    className="shrink-0 rounded bg-stone-800 p-1.5 text-emerald-300 hover:bg-emerald-800 disabled:opacity-50"
+                    aria-label={`Add ${song.title} to queue`}
+                    title="Add to queue"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
