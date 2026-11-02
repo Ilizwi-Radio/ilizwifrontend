@@ -190,7 +190,6 @@ export default function App({ moderatorMode = false }: { moderatorMode?: boolean
             <PresentersManagement
               presenters={presenters}
               refreshPresenters={refreshPresenters}
-              allowAccountActions={!moderatorMode}
             />
           )}
           {tab === "genres" && <GenresManagement genres={genres} setGenres={setGenres} />}
