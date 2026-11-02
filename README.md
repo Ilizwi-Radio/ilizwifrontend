@@ -7,6 +7,7 @@ iLIZWI Radio is a Next.js website and Express API for an online radio station. T
 - Public radio player connected to the station's Zeno stream, with current song metadata and active show details when available.
 - Single sign-in flow that routes admins and presenters to their dashboards; listener and registered-user accounts remain on the public site.
 - Admin tools for managing station content and presenters.
+- YouTube-hosted Video Hub: content managers add YouTube links and metadata; visitors search and filter the catalog, then watch videos embedded from YouTube. Video files are not uploaded to the iLIZWI VPS.
 - Presenter tools for profiles, shows, music, live broadcasting, and recording audio locally in the browser for download.
 - Live presenter audio is sent to the relay in 100 ms MediaRecorder chunks; the public player checks for live-source changes every 2 seconds while playing.
 - Remote co-hosting lets one assigned co-host join a show's live audio from another location; the primary presenter remains the only station-stream host.
@@ -58,6 +59,8 @@ NEXT_PUBLIC_RELAY_URL=ws://localhost:5001/broadcast
 
 The backend issues a short-lived relay token to signed-in presenters when they go live. Configure HTTPS/WSS URLs for a deployed site.
 
+For production, deploy the frontend and backend together: the browser sends the essential session cookie to the API with credentialed requests, and the backend only accepts the configured `CORS_ORIGINS`.
+
 Install and start the frontend from the repository root:
 
 ```bash
@@ -86,10 +89,23 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Authentication and cookies
 
-- Successful sign-in stores the seven-day JWT in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie scoped to the API host and `/api` path. Browser API requests use credentialed CORS from the exact origins in `CORS_ORIGINS`.
-- Existing localStorage sessions are exchanged for the cookie on the next session check, then the frontend removes the old token.
+- Successful sign-in stores the seven-day JWT in an `HttpOnly`, `SameSite=Lax` cookie scoped to the API host and `/api` path. The cookie is `Secure` in production. Browser API requests use credentialed CORS from the exact origins in `CORS_ORIGINS`.
+- Existing bearer-token sessions are exchanged for the cookie on the next session check, then the frontend removes the legacy token from localStorage.
 - The site displays a notice for this essential sign-in cookie. It does not use advertising or analytics cookies; YouTube embeds may use YouTube's own technologies when played.
 - Unsafe browser requests with an `Origin` header are restricted to the configured site origins.
+
+## Video Hub
+
+1. Upload and publish the video to the official iLIZWI Radio YouTube channel.
+2. In the admin dashboard's Video Hub, add the YouTube link, title, description, category, language, and optional thumbnail/duration. Choose whether it is featured and visible.
+3. Visitors can search and filter visible videos on the homepage. Playback opens an embedded player hosted by YouTube.
+
+The API extracts and validates the YouTube video ID. Categories use the existing `video_categories` table; videos remain in the existing `videos` table. No YouTube API key or VPS video upload is required. Apply `Backend/migrations/005_youtube_hosted_videos.sql` to the existing PostgreSQL database before deploying the matching backend. Legacy non-YouTube video records remain manageable in the admin catalog but are not shown publicly until given a valid YouTube link.
+
+## Site icons and sharing
+
+- Browser and PWA icons use `/favicon.ico`, `/icon.png`, and `/apple-touch-icon.png`; the manifest is `/site.webmanifest`.
+- Social previews, including WhatsApp link previews, use `/og-image-v3.webp`. This sharing image is separate from the browser and device icons.
 
 ## Project layout
 
